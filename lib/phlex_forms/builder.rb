@@ -86,6 +86,22 @@ module PhlexForms
     end
 
     # ------------------------------------------------------------------
+    # Layout helpers
+    # ------------------------------------------------------------------
+
+    # Side-by-side fields in a responsive grid (stacked on mobile).
+    #   f.row { f.field :first_name; f.field :last_name }
+    def row(columns: 2, **, &)
+      render Forms::Row.new(columns:, **), &
+    end
+
+    # A fieldset with a legend for sectioning related fields.
+    #   f.group(legend: "Address") { f.field :street }
+    def group(legend: nil, **, &)
+      render Forms::Group.new(legend:, **), &
+    end
+
+    # ------------------------------------------------------------------
     # Escape-hatch component API (stable signatures)
     # ------------------------------------------------------------------
 
