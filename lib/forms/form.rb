@@ -24,7 +24,9 @@ module Forms
       @base_modifiers = modifiers
       @options = options
       @model = record_from(model)
-      @scope = scope&.to_s || derive_scope(@model)
+      # scope: false opts out of scoping entirely — bare field names for
+      # reactive row editors / <template>-cloned rows. nil means "derive".
+      @scope = scope == false ? nil : (scope&.to_s || derive_scope(@model))
       @url = url || derive_url(model)
       @method = method || derive_method(@model)
       @errors = (@model.errors if @model.respond_to?(:errors))
@@ -76,11 +78,13 @@ module Forms
 
     # Nested attributes. Yields a FieldsForBuilder per association (single) or per
     # item (has_many), with the correctly-indexed nested scope.
-    def fields_for(association_name, model = nil, &)
+    # nested_attributes: false nests under the raw name (no `_attributes` suffix)
+    # for JSONB/hash columns that aren't Rails nested attributes.
+    def fields_for(association_name, model = nil, nested_attributes: true, &)
       return unless block_given?
 
       associated = model || (@model.public_send(association_name) if @model.respond_to?(association_name))
-      attributes_key = "#{association_name}_attributes"
+      attributes_key = nested_attributes ? "#{association_name}_attributes" : association_name.to_s
       base_scope = @scope ? "#{@scope}[#{attributes_key}]" : attributes_key
 
       if associated.respond_to?(:each_with_index)
@@ -123,8 +127,9 @@ module Forms
     end
 
     # Public name/id/value helpers for external components mirroring the Rails API.
-    def field_name(name) = @scope ? "#{@scope}[#{name}]" : name.to_s
-    def field_id(name)   = @scope ? "#{@scope}_#{name}" : name.to_s
+    def field_name(name)  = @scope ? "#{@scope}[#{name}]" : name.to_s
+    def field_id(name)    = @scope ? "#{@scope}_#{name}" : name.to_s
+    def field_value(name) = field_object(name).field_value
 
     private
 

@@ -131,6 +131,44 @@ describe Forms::Form do
     end
   end
 
+  describe "unscoped mode, JSONB nesting, and value introspection" do
+    it "emits bare field names and ids when scope: false" do
+      output = render_form(user, scope: false) { |f| f.field(:email) }
+
+      expect(output).to include('name="email"')
+      expect(output).to include('id="email"')
+      expect(output).not_to include("user[email]")
+    end
+
+    it "keeps deriving the scope from the model when scope: nil" do
+      output = render_form(user, scope: nil) { |f| f.field(:email) }
+
+      expect(output).to include('name="user[email]"')
+    end
+
+    it "nests fields_for under the raw name when nested_attributes: false" do
+      settings = build_model(:settings, locale: "en")
+
+      output = render_form(user) do |f|
+        f.fields_for(:settings, settings, nested_attributes: false) do |s|
+          s.field(:locale)
+        end
+      end
+
+      expect(output).to include('name="user[settings][locale]"')
+      expect(output).not_to include("settings_attributes")
+    end
+
+    it "exposes field_value alongside field_name and field_id" do
+      captured = nil
+      render_form(user) do |f|
+        captured = [f.field_name(:email), f.field_id(:email), f.field_value(:email)]
+      end
+
+      expect(captured).to eq(["user[email]", "user_email", "a@b.c"])
+    end
+  end
+
   describe "submit button" do
     it "defaults to the create label for a new record" do
       output = render_form(user) { |f| f.submit(:primary) }

@@ -26,11 +26,13 @@ module Forms
     end
 
     # Nested fields_for (single association or has_many collection).
-    def fields_for(association_name, model = nil, &)
+    # nested_attributes: false nests under the raw name (JSONB/hash columns).
+    def fields_for(association_name, model = nil, nested_attributes: true, &)
       return unless block_given?
 
       associated = model || (@model.public_send(association_name) if @model.respond_to?(association_name))
-      base_scope = "#{@scope}[#{association_name}_attributes]"
+      attributes_key = nested_attributes ? "#{association_name}_attributes" : association_name.to_s
+      base_scope = "#{@scope}[#{attributes_key}]"
 
       if associated.respond_to?(:each_with_index)
         associated.each_with_index do |item, index|
@@ -41,8 +43,9 @@ module Forms
       end
     end
 
-    def field_name(name) = "#{@scope}[#{name}]"
-    def field_id(name)   = "#{@scope.tr('[', '_').delete(']')}_#{name}"
+    def field_name(name)  = "#{@scope}[#{name}]"
+    def field_id(name)    = "#{@scope.tr('[', '_').delete(']')}_#{name}"
+    def field_value(name) = field_object(name).field_value
 
     private
 
