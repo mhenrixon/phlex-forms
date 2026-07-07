@@ -32,8 +32,9 @@ describe PhlexForms::ClassMerge do
       expect(described_class.merge("input input-md", "input-lg")).to eq("input input-lg")
     end
 
-    it "hands arbitrary tailwind utility conflicts to tailwind_merge" do
-      expect(described_class.merge("w-full", "w-1/2")).to eq("w-1/2")
+    it "passes non-conflicting utilities through in order" do
+      # No tailwind_merge dependency: additive utilities are simply preserved.
+      expect(described_class.merge("input w-full", "py-0")).to eq("input w-full py-0")
     end
 
     it "ignores nil and empty parts" do

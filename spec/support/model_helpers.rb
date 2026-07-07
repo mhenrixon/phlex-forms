@@ -22,7 +22,9 @@ module ModelHelpers
 
       attributes.each_key { |attr| attribute attr }
     end
-    klass.class_eval(&validations) if validations
+    # Use class_exec (not class_eval) so an arity-0 lambda passed as `validations`
+    # isn't rejected for receiving the implicit class argument class_eval passes.
+    klass.class_exec(&validations) if validations
     klass.new(**attributes)
   end
 end

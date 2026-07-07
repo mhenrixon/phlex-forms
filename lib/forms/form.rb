@@ -1,0 +1,130 @@
+# frozen_string_literal: true
+
+# The model-bound form. Yields itself as the builder:
+#
+#   Form(model: @user) do |f|
+#     f.field :email
+#     f.field :role, as: :select, choices: roles
+#     f.submit
+#   end
+#
+# Derives scope/url/method from the model (including the polymorphic array form
+# `model: [parent, child]`), emits the CSRF + method-override hidden fields, and
+# always sets multipart encoding for non-GET forms so file inputs never silently
+# fail to upload.
+module Forms
+  class Form < Phlex::HTML
+    include Phlex::Rails::Helpers::FormAuthenticityToken if defined?(Phlex::Rails::Helpers::FormAuthenticityToken)
+    include PhlexForms::Builder
+
+    attr_reader :model, :scope, :url, :method, :errors
+
+    def initialize(*modifiers, model: nil, scope: nil, url: nil, method: nil, **options)
+      super()
+      @base_modifiers = modifiers
+      @options = options
+      @model = record_from(model)
+      @scope = scope || derive_scope(@model)
+      @url = url || derive_url(model)
+      @method = method || derive_method(@model)
+      @errors = (@model.errors if @model.respond_to?(:errors))
+    end
+
+    def view_template(&)
+      form(action: @url, accept_charset: "UTF-8", method: form_method, **form_attributes) do
+        authenticity_token_field unless @method&.to_sym == :get
+        method_field if @method && %i[get post].exclude?(@method.to_sym)
+        yield self if block_given?
+      end
+    end
+
+    # Return a Forms::Field for a name (used by the Builder mixin).
+    def field_object(name)
+      Forms::Field.new(name:, model: @model, scope: @scope, errors: @errors, form: self)
+    end
+
+    def submit(*, **, &)
+      render Forms::Submit.new(*, model: @model, **, &)
+    end
+
+    # Public name/id/value helpers for external components mirroring the Rails API.
+    def field_name(name) = @scope ? "#{@scope}[#{name}]" : name.to_s
+    def field_id(name)   = @scope ? "#{@scope}_#{name}" : name.to_s
+
+    private
+
+    # For a polymorphic array model, the record is the last element.
+    def record_from(model)
+      model.is_a?(Array) ? model.last : model
+    end
+
+    def form_method
+      %i[get post].include?(@method.to_sym) ? @method : :post
+    end
+
+    def form_attributes
+      attrs = @options.except(:class, :local, :multipart, :turbo_frame, :id, :data)
+      attrs[:id] = @options[:id] if @options[:id]
+      if (classes = form_classes)
+        attrs[:class] = classes
+      end
+      attrs[:data] = (@options[:data] || {}).dup
+      attrs[:data][:turbo] = "false" if @options[:local] == true
+      attrs[:data][:turbo_frame] = @options[:turbo_frame] if @options[:turbo_frame]
+      attrs[:data].transform_values! { |v| v == false ? "false" : v }
+      attrs[:enctype] = "multipart/form-data" unless @method&.to_sym == :get
+      attrs
+    end
+
+    def form_classes
+      classes = []
+      classes << "space-y-4" if @base_modifiers.include?(:spaced)
+      classes << "space-y-6" if @base_modifiers.include?(:spacious)
+      PhlexForms::ClassMerge.merge(classes.join(" "), @options[:class]).presence
+    end
+
+    def authenticity_token_field
+      return unless respond_to?(:form_authenticity_token)
+
+      token = form_authenticity_token
+      input(type: "hidden", name: "authenticity_token", value: token) if token
+    end
+
+    def method_field
+      input(type: "hidden", name: "_method", value: @method)
+    end
+
+    def derive_scope(record)
+      return nil unless record
+
+      if record.respond_to?(:model_name)
+        record.model_name.param_key
+      elsif record.is_a?(Symbol) || record.is_a?(String)
+        record.to_s
+      else
+        record.class.name.underscore.tr("/", "_")
+      end
+    end
+
+    # For an array model, build the url from the whole array (polymorphic nesting);
+    # otherwise from the record.
+    def derive_url(model)
+      return "/" unless model
+
+      record = record_from(model)
+      persisted = record.respond_to?(:persisted?) && record.persisted?
+      prefix = url_prefix(model, record)
+      persisted ? "#{prefix}/#{record.to_param}" : prefix
+    end
+
+    def url_prefix(model, record)
+      parents = model.is_a?(Array) ? model[0...-1] : []
+      segments = parents.map { |p| "/#{p.class.name.underscore.pluralize}/#{p.to_param}" }
+      "#{segments.join}/#{derive_scope(record).pluralize}"
+    end
+
+    def derive_method(record)
+      record.respond_to?(:persisted?) && record.persisted? ? :patch : :post
+    end
+  end
+end

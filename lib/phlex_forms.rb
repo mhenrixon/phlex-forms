@@ -2,7 +2,7 @@
 
 require "phlex"
 require "daisy_ui"
-require "tailwind_merge"
+require "glyphs"
 require "zeitwerk"
 
 require_relative "phlex_forms/version"
@@ -54,21 +54,20 @@ loader.inflector.inflect(
   "phlex-forms" => "PhlexForms"
 )
 
-components_dir = "#{__dir__}/phlex_forms/components"
+# Two sibling (non-nested) autoload roots:
+#   lib/phlex_forms -> PhlexForms::  (gem internals: config, class_merge, ...)
+#   lib/forms       -> Forms::        (the component kit)
+# Keeping them as separate top-level dirs avoids the ambiguity of nesting one
+# namespace root inside another.
+loader.push_dir("#{__dir__}/phlex_forms", namespace: PhlexForms)
+loader.push_dir("#{__dir__}/forms", namespace: Forms)
 
-# Gem internals under PhlexForms::, sourced from lib/ but with the component
-# subtree and the already-required entry files excluded.
-loader.push_dir(__dir__)
-loader.ignore(components_dir)
-loader.ignore("#{__dir__}/phlex-forms.rb")
-loader.ignore("#{__dir__}/phlex_forms.rb")
+# Files required explicitly above, or loaded only in specific contexts.
+loader.ignore("#{__dir__}/phlex_forms/version.rb") # required explicitly above
 loader.ignore("#{__dir__}/rubocop") # cops load on demand via the host .rubocop.yml
 # The engine is conditionally required at the bottom of this file (only under
 # Rails), so it must not be autoloaded/eager-loaded by Zeitwerk.
 loader.ignore("#{__dir__}/phlex_forms/engine.rb")
-
-# Components under the top-level Forms:: namespace.
-loader.push_dir(components_dir, namespace: Forms)
 
 loader.setup
 

@@ -4,7 +4,7 @@ require_relative "lib/phlex_forms/version"
 
 Gem::Specification.new do |s|
   s.name = "phlex-forms"
-  s.version = Forms::VERSION
+  s.version = PhlexForms::VERSION
   s.licenses = ["MIT"]
   s.summary = "A model-bound, DaisyUI-styled form builder for Phlex"
   s.description = "phlex-forms gives Phlex apps a clean form builder: Form(model:) { |f| f.field :email } " \
@@ -44,11 +44,15 @@ Gem::Specification.new do |s|
   s.required_ruby_version = ">= 3.2"
 
   s.add_dependency "daisyui", "~> 1.2"
+  s.add_dependency "glyphs", ">= 0.1.0"
   s.add_dependency "phlex", "~> 2.0", ">= 2.0.0"
-  s.add_dependency "tailwind_merge", "~> 1.0"
   s.add_dependency "zeitwerk", "~> 2.6"
 
-  # `glyps` (icon components) is an OPTIONAL runtime integration, not a hard
-  # dependency: phlex-forms ships a self-contained inline-SVG icon renderer by
-  # default and auto-detects glyps when it is loaded. See PhlexForms::Configuration.
+  # NOTE: `glyphs` ships as a dependency so `PhlexForms::Configuration
+  # .glyphs_renderer` works out of the box, but it is NOT the default renderer:
+  # rails_icons resolves SVGs from the host app's asset tree, so the default is a
+  # self-contained inline SVG and glyphs is opt-in via PhlexForms.configure.
+  # No tailwind_merge dependency: daisyui modifier conflicts are resolved by
+  # PhlexForms::ClassMerge (last-one-wins), and form fields do not receive
+  # conflicting core Tailwind utilities.
 end
