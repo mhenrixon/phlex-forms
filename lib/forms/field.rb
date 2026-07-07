@@ -129,7 +129,63 @@ module Forms
       nil
     end
 
+    # --- client-side validation wiring (pairs with Forms::Validations) ---
+
+    # Merge a per-call `validate:` override into the field's option hash. Strips
+    # `:validate` and, when rules apply, merges the Stimulus data into `data:`.
+    # Falls back to the form-level introspector when `:validate` is absent.
+    #
+    #   validate: false           → opt this field out
+    #   validate: true            → the form-level introspector
+    #   validate: { length: {…} } → explicit inline rules
+    def apply_validations(options)
+      return consume_validate(options) if options.key?(:validate)
+
+      data = form_introspector.data_attributes_for(@name)
+      return options if data.empty?
+
+      options.merge(data: merge_data(options[:data], data))
+    end
+
     private
+
+    def consume_validate(options)
+      return options unless options.key?(:validate)
+
+      override = options.delete(:validate)
+      data = validation_data_for(override)
+      return options if data.empty?
+
+      options.merge(data: merge_data(options[:data], data))
+    end
+
+    def validation_data_for(override)
+      case override
+      when true then form_introspector.data_attributes_for(@name)
+      when Hash then Forms::Validations::ManualRules.new(override).data_attributes
+      else {} # false / nil / anything else → no client-side validation
+      end
+    end
+
+    def form_introspector
+      if @form.respond_to?(:validations_introspector)
+        @form.validations_introspector
+      else
+        Forms::Validations::Introspector::Null.new
+      end
+    end
+
+    def merge_data(existing, additions)
+      existing = (existing || {}).dup
+      additions.each do |key, value|
+        if key == :controller
+          existing[:controller] = [existing[:controller], value].compact.reject { |s| s.to_s.empty? }.join(" ")
+        else
+          existing[key] = value
+        end
+      end
+      existing
+    end
 
     def conditional?(validator)
       validator.options.key?(:if) || validator.options.key?(:unless) || validator.options.key?(:on)

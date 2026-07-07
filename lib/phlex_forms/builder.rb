@@ -67,6 +67,7 @@ module PhlexForms
       fo = field_object(name)
       req = required.nil? ? fo.required? : required
       label_text = label == false ? nil : (label || fo.field_label)
+      options = fo.apply_validations(options)
 
       render fo.control(label: label_text, hint:, required: req) do
         render_field_input(fo, name, as, modifiers, choices:, required: req, **options)
@@ -77,35 +78,41 @@ module PhlexForms
     # Escape-hatch component API (stable signatures)
     # ------------------------------------------------------------------
 
-    def Input(name, *modifiers, **)
+    def Input(name, *modifiers, **options)
+      fo = field_object(name)
       type = resolve_input_type(name, modifiers)
       type = :"datetime-local" if type == :datetime
       remaining = modifiers - INPUT_TYPE_MODIFIERS
-      render field_object(name).input(*remaining, type:, **)
+      render fo.input(*remaining, type:, **fo.apply_validations(options))
     end
 
-    def Select(name, *modifiers, choices: nil, **)
-      render field_object(name).choices_select(choices, *modifiers, **)
+    def Select(name, *modifiers, choices: nil, **options)
+      fo = field_object(name)
+      render fo.choices_select(choices, *modifiers, **fo.apply_validations(options))
     end
 
-    def Textarea(name, *modifiers, **)
-      render field_object(name).textarea(*modifiers, **)
+    def Textarea(name, *modifiers, **options)
+      fo = field_object(name)
+      render fo.textarea(*modifiers, **fo.apply_validations(options))
     end
 
-    def Checkbox(name, *modifiers, **)
-      render field_object(name).checkbox(*modifiers, **)
+    def Checkbox(name, *modifiers, **options)
+      fo = field_object(name)
+      render fo.checkbox(*modifiers, **fo.apply_validations(options))
     end
 
     def Radio(name, value, *modifiers, **)
       render field_object(name).radio(value, *modifiers, **)
     end
 
-    def Toggle(name, *modifiers, **)
-      render field_object(name).toggle(*modifiers, **)
+    def Toggle(name, *modifiers, **options)
+      fo = field_object(name)
+      render fo.toggle(*modifiers, **fo.apply_validations(options))
     end
 
-    def FileInput(name, *modifiers, **)
-      render field_object(name).file(*modifiers, **)
+    def FileInput(name, *modifiers, **options)
+      fo = field_object(name)
+      render fo.file(*modifiers, **fo.apply_validations(options))
     end
 
     def Hidden(name, **)

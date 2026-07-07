@@ -17,17 +17,29 @@ module Forms
     include Phlex::Rails::Helpers::FormAuthenticityToken if defined?(Phlex::Rails::Helpers::FormAuthenticityToken)
     include PhlexForms::Builder
 
-    attr_reader :model, :scope, :url, :method, :errors
+    attr_reader :model, :scope, :url, :method, :errors, :validate
 
-    def initialize(*modifiers, model: nil, scope: nil, url: nil, method: nil, **options)
+    def initialize(*modifiers, model: nil, scope: nil, url: nil, method: nil, validate: false, **options)
       super()
       @base_modifiers = modifiers
       @options = options
       @model = record_from(model)
-      @scope = scope || derive_scope(@model)
+      @scope = scope&.to_s || derive_scope(@model)
       @url = url || derive_url(model)
       @method = method || derive_method(@model)
       @errors = (@model.errors if @model.respond_to?(:errors))
+      @validate = validate
+    end
+
+    # Introspector for the bound model when client-side validation is enabled, or
+    # a no-op Null otherwise. Callers can always call #data_attributes_for(attr).
+    def validations_introspector
+      @validations_introspector ||=
+        if @validate
+          Forms::Validations::Introspector.for(@model)
+        else
+          Forms::Validations::Introspector::Null.new
+        end
     end
 
     def view_template(&)
@@ -71,9 +83,20 @@ module Forms
       attrs[:data] = (@options[:data] || {}).dup
       attrs[:data][:turbo] = "false" if @options[:local] == true
       attrs[:data][:turbo_frame] = @options[:turbo_frame] if @options[:turbo_frame]
+      apply_validation_coordinator(attrs) if @validate
       attrs[:data].transform_values! { |v| v == false ? "false" : v }
       attrs[:enctype] = "multipart/form-data" unless @method&.to_sym == :get
       attrs
+    end
+
+    # When client-side validation is on, attach the form-level coordinator
+    # controller (submit interceptor) and turn OFF the native browser validation
+    # UI (novalidate) — the Stimulus layer owns error display.
+    def apply_validation_coordinator(attrs)
+      existing = attrs[:data][:controller].to_s
+      coordinator = "forms--validations--form"
+      attrs[:data][:controller] = [existing, coordinator].reject(&:empty?).join(" ")
+      attrs[:novalidate] = true
     end
 
     def form_classes

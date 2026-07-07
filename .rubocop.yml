@@ -64,6 +64,13 @@ Style/OneClassPerFile:
 Naming/BlockForwarding:
   Enabled: false
 
+# `as` is a deliberate part of the public field API (f.field :x, as: :select).
+Naming/MethodParameterName:
+  AllowedNames:
+    - as
+    - fo
+    - id
+
 # Component builder methods are intentionally PascalCase (Input, Select, ...) to
 # mirror Phlex kit-helper naming; the callable methods and their symbol names
 # must not be forced to snake_case.

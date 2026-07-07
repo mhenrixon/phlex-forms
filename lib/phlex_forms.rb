@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "date" # Phlex's attribute serializer references Date; ensure it's loaded.
 require "phlex"
 require "daisy_ui"
 require "glyphs"
