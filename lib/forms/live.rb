@@ -107,7 +107,9 @@ module Forms
 
     # Assign → validate → morph. The reply preserves the focused input and its
     # caret (Idiomorph); the fresh token re-signs the updated touched set.
-    def validate(_touch: nil, **posted)
+    # `_touch` is the wire key (underscored so it can never collide with a
+    # model attribute) — the schema splats it back as this keyword.
+    def validate(_touch: nil, **posted) # rubocop:disable Lint/UnderscorePrefixedVariableName
       @touched |= [_touch.to_s] if _touch
       assign_live_attributes(posted[self.class.live_scope.to_sym])
       @model.validate

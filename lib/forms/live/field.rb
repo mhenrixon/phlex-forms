@@ -12,10 +12,10 @@ module Forms
       end
 
       def apply_validations(options)
-        options = super
-        return options unless @live_trigger
+        merged = super
+        return merged unless @live_trigger
 
-        options.merge(data: merge_data(options[:data], @live_trigger[:data]))
+        merged.merge(data: merge_data(merged[:data], @live_trigger[:data]))
       end
     end
   end

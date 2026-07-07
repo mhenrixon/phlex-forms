@@ -7,6 +7,10 @@
 # Not usually built directly — `Form#field_object(:name)` / the builder return one.
 module Forms
   class Field
+    # Data keys whose values are Stimulus token lists — merged by joining, not
+    # replacing, so validation controllers and live triggers coexist.
+    TOKEN_JOINED_DATA_KEYS = %i[controller action].freeze
+
     attr_reader :name, :model, :scope, :errors
 
     # error_name: where errors live when it differs from the input's name — an
@@ -197,10 +201,6 @@ module Forms
         Forms::Validations::Introspector::Null.new
       end
     end
-
-    # Keys whose values are Stimulus token lists — merged by joining, not
-    # replacing, so validation controllers and live triggers coexist.
-    TOKEN_JOINED_DATA_KEYS = %i[controller action].freeze
 
     def merge_data(existing, additions)
       existing = (existing || {}).dup
