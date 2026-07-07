@@ -67,6 +67,7 @@ loader.push_dir("#{__dir__}/forms", namespace: Forms)
 # Files required explicitly above, or loaded only in specific contexts.
 loader.ignore("#{__dir__}/phlex_forms/version.rb") # required explicitly above
 loader.ignore("#{__dir__}/rubocop") # cops load on demand via the host .rubocop.yml
+loader.ignore("#{__dir__}/phlex_forms/rubocop.rb") # cop entry point (RuboCop:: namespace)
 # The engine is conditionally required at the bottom of this file (only under
 # Rails), so it must not be autoloaded/eager-loaded by Zeitwerk.
 loader.ignore("#{__dir__}/phlex_forms/engine.rb")

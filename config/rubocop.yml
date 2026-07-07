@@ -1,0 +1,20 @@
+# Shareable RuboCop config for phlex-forms' cops. Inherit it in a host app:
+#
+#   require:
+#     - phlex_forms/rubocop
+#   inherit_gem:
+#     phlex-forms: config/rubocop.yml
+#
+# Both cops target Phlex view/component files by default; adjust Include in the
+# host if your components live elsewhere.
+PhlexForms/RawForm:
+  Enabled: true
+  Include:
+    - "app/components/**/*.rb"
+    - "app/views/**/*.rb"
+
+PhlexForms/LegacyFormMethod:
+  Enabled: true
+  Include:
+    - "app/components/**/*.rb"
+    - "app/views/**/*.rb"

@@ -86,6 +86,11 @@ Performance/FlatMap:
 RSpec/DescribeClass:
   Enabled: false
 
+# Cop specs naturally group one describe per cop in a single file.
+RSpec/MultipleDescribes:
+  Exclude:
+    - spec/rubocop/**/*_spec.rb
+
 RSpec/ContextWording:
   Prefixes:
     - and
