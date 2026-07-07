@@ -31,5 +31,12 @@ module PhlexForms
       locales = Dir[root.join("config/locales/*.yml")].map(&:to_s)
       app.config.i18n.load_path.unshift(*locales)
     end
+
+    # The raw-hash param type Forms::Live's :validate action schema declares.
+    # Registered from an initializer because phlex-reactive freezes its
+    # param-type registry after boot.
+    initializer "phlex_forms.live_param_type" do
+      Forms::Live.register_param_type! if defined?(Phlex::Reactive)
+    end
   end
 end

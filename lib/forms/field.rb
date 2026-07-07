@@ -198,13 +198,17 @@ module Forms
       end
     end
 
+    # Keys whose values are Stimulus token lists — merged by joining, not
+    # replacing, so validation controllers and live triggers coexist.
+    TOKEN_JOINED_DATA_KEYS = %i[controller action].freeze
+
     def merge_data(existing, additions)
       existing = (existing || {}).dup
       additions.each do |key, value|
-        if key == :controller
-          existing[:controller] = [existing[:controller], value].compact.reject { |s| s.to_s.empty? }.join(" ")
+        existing[key] = if TOKEN_JOINED_DATA_KEYS.include?(key)
+          [existing[key], value].compact.reject { |s| s.to_s.empty? }.join(" ")
         else
-          existing[key] = value
+          value
         end
       end
       existing

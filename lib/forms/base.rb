@@ -40,6 +40,41 @@ module Forms
         inherited = superclass.respond_to?(:form_defaults) ? superclass.form_defaults : {}
         inherited.merge(@form_defaults || {})
       end
+
+      # Server-truth live validation via phlex-reactive (a soft dependency):
+      #
+      #   class UserForm < Forms::Base
+      #     live model: User
+      #     def fields = field(:email)
+      #   end
+      #
+      # Blur/debounced input POST every field to a :validate action that runs
+      # the REAL model validators and morphs the errors back in, focus intact.
+      # Only Forms::Base subclasses can be live — the endpoint rebuilds the
+      # form from its class; an inline block cannot be serialized.
+      def live(model:, scope: nil, debounce: 300)
+        unless reactive_available?
+          raise PhlexForms::FeatureUnavailable,
+            "#{name || 'this form'} declares `live` but the phlex-reactive gem is not " \
+            "installed. Add `gem \"phlex-reactive\"` to your Gemfile, or use " \
+            "`validate: true` for the client-side Stimulus mirror instead."
+        end
+
+        include Forms::Live
+
+        setup_live(model_class: model, scope: scope || derive_live_scope(model), debounce:)
+      end
+
+      # Extracted so specs can exercise the FeatureUnavailable guard.
+      def reactive_available?
+        defined?(Phlex::Reactive::Component) ? true : false
+      end
+
+      private
+
+      def derive_live_scope(model)
+        model.respond_to?(:model_name) ? model.model_name.param_key : model.name.underscore.tr("/", "_")
+      end
     end
 
     def initialize(*modifiers, **options)

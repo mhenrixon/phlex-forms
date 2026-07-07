@@ -20,7 +20,14 @@ module Forms
     attr_reader :model, :scope, :url, :method, :errors, :validate, :theme
 
     def initialize(*modifiers, model: nil, scope: nil, url: nil, method: nil, validate: false,
-                   field_variants: nil, theme: nil, **options)
+                   field_variants: nil, theme: nil, live: nil, **options)
+      if live
+        raise ArgumentError,
+          "live validation requires a Forms::Base subclass — the endpoint rebuilds the " \
+          "form from its class, and an inline block cannot be serialized. Declare " \
+          "`live model: #{record_from(model)&.class&.name || 'YourModel'}` on the class instead."
+      end
+
       super()
       @base_modifiers = modifiers
       @field_variants = Array(field_variants)

@@ -16,6 +16,15 @@ rescue LoadError
   # they load fine — they just must not be rendered (Theme.daisy raises).
 end
 
+begin
+  require "phlex/reactive"
+rescue LoadError
+  # phlex-reactive is a soft dependency: without it the `live` server-truth
+  # validation macro raises a FeatureUnavailable pointing here, and the live
+  # files are excluded from autoloading below (they include
+  # Phlex::Reactive::Component at class level, so they must not load).
+end
+
 require_relative "phlex_forms/version"
 
 # phlex-forms exposes its components under the `Forms::` namespace (Form, Input,
@@ -80,6 +89,13 @@ loader.ignore("#{__dir__}/phlex_forms/rubocop.rb") # cop entry point (RuboCop:: 
 # The engine is conditionally required at the bottom of this file (only under
 # Rails), so it must not be autoloaded/eager-loaded by Zeitwerk.
 loader.ignore("#{__dir__}/phlex_forms/engine.rb")
+
+# The live-validation layer includes Phlex::Reactive::Component at class level,
+# so it can only load when the phlex-reactive soft dependency is present.
+unless defined?(Phlex::Reactive)
+  loader.ignore("#{__dir__}/forms/live.rb")
+  loader.ignore("#{__dir__}/forms/live")
+end
 
 loader.setup
 

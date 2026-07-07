@@ -14,6 +14,14 @@ I18n.load_path += Dir[File.expand_path("../config/locales/*.yml", __dir__)]
 I18n.available_locales = %i[en sv de]
 I18n.default_locale = :en
 
+# Forms::Live needs the reactive verifier (token signing on every render) and
+# the :form_attributes param type its action schema is declared with. The
+# engine does this in a host app; do it here for the live specs.
+if defined?(Phlex::Reactive)
+  Phlex::Reactive.verifier = ActiveSupport::MessageVerifier.new("phlex-forms-test-secret")
+  Forms::Live.register_param_type!
+end
+
 Dir["./spec/support/**/*.rb"].each { |f| require f }
 
 RSpec.configure do |config|
