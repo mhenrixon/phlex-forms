@@ -50,8 +50,10 @@ task :release, %i[version force] do |_t, args|
   else
     file = "lib/phlex_forms/version.rb"
     File.write(file, File.read(file).sub(/VERSION = ".*"/, %(VERSION = "#{new_version}")))
-    sh("bundle install --quiet")
-    sh("git add #{file} Gemfile.lock")
+    # Gemfile.lock is gitignored (correct for a library gem — a gem must not lock
+    # its own deps), so the release commit stages ONLY the version file. `gem
+    # build` reads the gemspec, not the lock, and s.files comes from git ls-files.
+    sh("git add #{file}")
     sh("git commit -m 'chore: bump version to #{new_version}'")
   end
 
