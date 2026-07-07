@@ -66,6 +66,7 @@ module PhlexForms
     # Remaining positional modifiers/keywords pass through to the inner input.
     def field(name, *modifiers, label: nil, hint: nil, as: nil, required: nil,
               choices: nil, **options)
+      modifiers = default_field_variants + modifiers
       inferred = PhlexForms::Inference.resolve(model:, name:, as:, modifiers:, choices:)
       # error_name: for a rewritten field (:country -> :country_id) errors still
       # live on the association name.

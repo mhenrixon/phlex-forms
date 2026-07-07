@@ -25,6 +25,10 @@ module Forms
       Forms::Field.new(name:, model: @model, scope: @scope, errors: @errors, form: @parent_form, error_name:)
     end
 
+    def default_field_variants
+      @parent_form.default_field_variants
+    end
+
     # Nested fields_for (single association or has_many collection).
     # nested_attributes: false nests under the raw name (JSONB/hash columns).
     def fields_for(association_name, model = nil, nested_attributes: true, &)

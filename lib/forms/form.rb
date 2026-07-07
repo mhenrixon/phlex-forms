@@ -19,9 +19,11 @@ module Forms
 
     attr_reader :model, :scope, :url, :method, :errors, :validate
 
-    def initialize(*modifiers, model: nil, scope: nil, url: nil, method: nil, validate: false, **options)
+    def initialize(*modifiers, model: nil, scope: nil, url: nil, method: nil, validate: false,
+                   field_variants: nil, **options)
       super()
       @base_modifiers = modifiers
+      @field_variants = Array(field_variants)
       @options = options
       @model = record_from(model)
       # scope: false opts out of scoping entirely — bare field names for
@@ -124,6 +126,12 @@ module Forms
       end
       choices = [[options[:prompt], ""]] + choices if options[:prompt]
       render field_object(name).select(choices, **options.except(:prompt), **html_options)
+    end
+
+    # Default variants prepended to every `field`'s inner input: global config
+    # first, then this form's field_variants: (call-site modifiers stack last).
+    def default_field_variants
+      PhlexForms.config.field_variants + @field_variants
     end
 
     # Public name/id/value helpers for external components mirroring the Rails API.

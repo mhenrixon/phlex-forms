@@ -41,6 +41,15 @@ module PhlexForms
     # attribute-name inference for `field`.
     attr_writer :infer_from_model
 
+    # Global daisyui variants prepended to every `field`'s inner input, e.g.
+    # `c.field_variants = [:primary]`. Form-level `field_variants:` and
+    # call-site modifiers stack after (later wins).
+    attr_writer :field_variants
+
+    def field_variants
+      @field_variants ||= []
+    end
+
     def infer_from_model
       return @infer_from_model if defined?(@infer_from_model) && !@infer_from_model.nil?
 

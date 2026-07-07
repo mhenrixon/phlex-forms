@@ -234,6 +234,40 @@ describe Forms::Form do
     end
   end
 
+  describe "form-level field variants" do
+    after { PhlexForms.reset_configuration! }
+
+    it "applies field_variants: to every field's inner input" do
+      output = render_form(user, field_variants: [:sm]) { |f| f.field(:email) }
+
+      expect(output).to include("input-sm")
+    end
+
+    it "puts call-site modifiers after form-level variants so they win the stack" do
+      output = render_form(user, field_variants: [:sm]) { |f| f.field(:email, :lg) }
+
+      expect(output.index("input-sm")).to be < output.index("input-lg")
+    end
+
+    it "applies globally configured variants beneath form-level ones" do
+      PhlexForms.configure { |c| c.field_variants = [:primary] }
+
+      output = render_form(user) { |f| f.field(:email) }
+
+      expect(output).to include("input-primary")
+    end
+
+    it "inherits the parent form's variants through fields_for" do
+      settings = build_model(:settings, locale: "en")
+
+      output = render_form(user, field_variants: [:primary]) do |f|
+        f.fields_for(:settings, settings) { |s| s.field(:locale) }
+      end
+
+      expect(output).to include("input-primary")
+    end
+  end
+
   describe "submit button" do
     it "defaults to the create label for a new record" do
       output = render_form(user) { |f| f.submit(:primary) }
