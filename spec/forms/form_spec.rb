@@ -88,11 +88,12 @@ describe Forms::Form do
 
     it "wraps custom content via f.Control" do
       output = render_form(user) do |f|
-        f.Control(:email, label: "Your email") { f.Input(:email, :bordered) }
+        f.Control(:email, label: "Your email") { f.Input(:email, :primary) }
       end
 
       expect(output).to include("Your email")
-      expect(output).to include("input-bordered")
+      # daisyui v5: the base `input` class carries the border; :primary composes on top.
+      expect(output).to include("input input-primary")
     end
   end
 
