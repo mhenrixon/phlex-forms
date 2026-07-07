@@ -1,0 +1,14 @@
+en:
+  # Default submit-button text for Forms::Submit. Host apps override by defining
+  # the same keys (their locale files load after the gem's).
+  cmd:
+    create: Create
+    create_model: Create %{model}
+    update: Update
+    update_model: Update %{model}
+  components:
+    searchable_select:
+      no_results: No results found
+      placeholder: Select...
+      search_placeholder: Search...
+      no_choices: No choices to choose from

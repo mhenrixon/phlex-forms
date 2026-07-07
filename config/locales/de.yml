@@ -1,0 +1,12 @@
+de:
+  cmd:
+    create: Erstellen
+    create_model: "%{model} erstellen"
+    update: Aktualisieren
+    update_model: "%{model} aktualisieren"
+  components:
+    searchable_select:
+      no_results: Keine Ergebnisse gefunden
+      placeholder: Auswählen...
+      search_placeholder: Suchen...
+      no_choices: Keine Auswahl verfügbar

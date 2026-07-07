@@ -1,0 +1,12 @@
+sv:
+  cmd:
+    create: Skapa
+    create_model: Skapa %{model}
+    update: Uppdatera
+    update_model: Uppdatera %{model}
+  components:
+    searchable_select:
+      no_results: Inga resultat hittades
+      placeholder: Välj...
+      search_placeholder: Sök...
+      no_choices: Inga alternativ att välja

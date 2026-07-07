@@ -1,0 +1,119 @@
+plugins:
+  - rubocop-performance
+  - rubocop-rake
+  - rubocop-rspec
+
+AllCops:
+  TargetRubyVersion: 3.2
+  DisabledByDefault: false
+  DisplayCopNames: true
+  NewCops: enable
+
+Layout/ArgumentAlignment:
+  EnforcedStyle: with_fixed_indentation
+
+Layout/ArrayAlignment:
+  EnforcedStyle: with_fixed_indentation
+
+Layout/BlockAlignment:
+  EnforcedStyleAlignWith: start_of_line
+
+Layout/CaseIndentation:
+  EnforcedStyle: end
+
+Layout/EndAlignment:
+  EnforcedStyleAlignWith: start_of_line
+
+Layout/FirstArgumentIndentation:
+  Enabled: false
+
+Layout/FirstArrayElementIndentation:
+  EnforcedStyle: consistent
+
+Layout/FirstHashElementIndentation:
+  EnforcedStyle: consistent
+
+Layout/HashAlignment:
+  EnforcedColonStyle: key
+  EnforcedHashRocketStyle: key
+  EnforcedLastArgumentHashStyle: always_inspect
+
+Layout/LineContinuationLeadingSpace:
+  Enabled: false
+
+Layout/LineLength:
+  Enabled: false
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+
+Metrics:
+  Enabled: false
+
+# lib/phlex-forms.rb is the conventional dashed require alias for the gem.
+Naming/FileName:
+  Exclude:
+    - lib/phlex-forms.rb
+
+# The gem entry point intentionally opens both the PhlexForms:: (internals) and
+# Forms:: (component kit) namespaces.
+Style/OneClassPerFile:
+  Exclude:
+    - lib/phlex_forms.rb
+
+Naming/BlockForwarding:
+  Enabled: false
+
+# Component builder methods are intentionally PascalCase (Input, Select, ...) to
+# mirror Phlex kit-helper naming; the callable methods and their symbol names
+# must not be forced to snake_case.
+Naming/MethodName:
+  Enabled: false
+
+Performance/FlatMap:
+  Enabled: true
+  EnabledForFlattenWithoutParams: true
+
+RSpec/ContextWording:
+  Prefixes:
+    - and
+    - as
+    - for
+    - if
+    - in
+    - or
+    - unless
+    - when
+    - with
+    - without
+
+RSpec/ExampleLength:
+  Enabled: false
+
+RSpec/MultipleExpectations:
+  Enabled: false
+
+RSpec/MultipleMemoizedHelpers:
+  Enabled: false
+
+RSpec/NestedGroups:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: always
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/TrailingCommaInArguments:
+  EnforcedStyleForMultiline: no_comma
+
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: no_comma
+
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: no_comma
