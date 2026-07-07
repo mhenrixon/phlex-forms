@@ -22,46 +22,48 @@ module Forms
     end
 
     # --- leaf component builders (return component instances to render) ---
+    # Component classes resolve through the form's theme (see
+    # PhlexForms::Theme), so the same field renders daisy or plain.
 
     def input(*modifiers, type: :text, **)
-      Forms::Input.new(*modifiers, type:, **field_attributes, **)
+      theme[:input].new(*modifiers, type:, **field_attributes, **)
     end
 
     def textarea(*modifiers, **)
-      Forms::Textarea.new(*modifiers, **field_attributes, **)
+      theme[:textarea].new(*modifiers, **field_attributes, **)
     end
     alias text_area textarea
 
     def rich_textarea(*modifiers, **)
-      Forms::RichTextarea.new(*modifiers, name: field_name, id: field_id, value: field_value, **)
+      theme[:rich_textarea].new(*modifiers, name: field_name, id: field_id, value: field_value, **)
     end
     alias rich_text_area rich_textarea
 
     def hidden(**)
-      Forms::Input.new(type: :hidden, **field_attributes, **)
+      theme[:input].new(type: :hidden, **field_attributes, **)
     end
 
     # daisyui v5 "icon/text inside the field" wrapper. The block renders the
     # leading content (icon, prefix); the bare input is wired to this field.
     def wrapped_input(*modifiers, type: :text, **, &)
-      Forms::WrappedInput.new(*modifiers, type:, **field_attributes.except(:error), error: invalid?, **, &)
+      theme[:wrapped_input].new(*modifiers, type:, **field_attributes.except(:error), error: invalid?, **, &)
     end
 
     def file(*modifiers, **)
-      Forms::FileInput.new(*modifiers, **field_attributes.except(:value), **)
+      theme[:file].new(*modifiers, **field_attributes.except(:value), **)
     end
 
     def checkbox(*modifiers, **)
-      Forms::Checkbox.new(*modifiers, checked: field_value, **field_attributes.except(:value), **)
+      theme[:checkbox].new(*modifiers, checked: field_value, **field_attributes.except(:value), **)
     end
     alias check_box checkbox
 
     def toggle(*modifiers, **)
-      Forms::Toggle.new(*modifiers, checked: field_value, **field_attributes.except(:value), **)
+      theme[:toggle].new(*modifiers, checked: field_value, **field_attributes.except(:value), **)
     end
 
     def radio(value, *modifiers, **options)
-      Forms::Radio.new(
+      theme[:radio].new(
         *modifiers,
         value:,
         checked: field_value == value,
@@ -71,7 +73,7 @@ module Forms
     alias radio_button radio
 
     def select(choices = nil, **options)
-      Forms::Select.new(choices:, selected: field_value, **select_options(options))
+      theme[:select].new(choices:, selected: field_value, **select_options(options))
     end
 
     # Enhanced select: choices.js-backed when searchable, native otherwise.
@@ -79,18 +81,18 @@ module Forms
       searchable = options.delete(:searchable) { false }
       opts = select_options(options)
       if searchable
-        Forms::ChoicesSelect.new(*modifiers, choices:, selected: field_value, searchable: true, **opts)
+        theme[:choices_select].new(*modifiers, choices:, selected: field_value, searchable: true, **opts)
       else
-        Forms::Select.new(*modifiers, choices:, selected: field_value, **opts)
+        theme[:select].new(*modifiers, choices:, selected: field_value, **opts)
       end
     end
 
     def label(text = nil, *modifiers, **, &block)
-      Forms::Label.new(*modifiers, text: text || (block ? nil : field_label), for: field_id, **, &block)
+      theme[:label].new(*modifiers, text: text || (block ? nil : field_label), for: field_id, **, &block)
     end
 
     def control(label: nil, hint: nil, required: false, **, &)
-      Forms::FormControl.new(label:, hint:, error: field_error_message, for: field_id, required:, **, &)
+      theme[:control].new(label:, hint:, error: field_error_message, for: field_id, required:, **, &)
     end
 
     # --- derived metadata ---
@@ -165,6 +167,10 @@ module Forms
     end
 
     private
+
+    def theme
+      @theme ||= @form.respond_to?(:theme) ? @form.theme : PhlexForms::Theme.resolve(nil)
+    end
 
     def consume_validate(options)
       return options unless options.key?(:validate)

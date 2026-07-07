@@ -44,10 +44,14 @@ Gem::Specification.new do |s|
   s.required_ruby_version = ">= 3.2"
 
   s.add_dependency "activesupport", ">= 7.0"
-  s.add_dependency "daisyui", "~> 1.2"
   s.add_dependency "glyphs", ">= 0.1.0"
   s.add_dependency "phlex", "~> 2.0", ">= 2.0.0"
   s.add_dependency "zeitwerk", "~> 2.6"
+
+  # NOTE: `daisyui` is a SOFT dependency (not declared here). When it is loaded
+  # the daisy theme is the default; without it the Plain theme (bare semantic
+  # HTML) takes over, so phlex-forms works in non-daisyui projects without
+  # pulling in a UI kit they never render.
 
   # NOTE: `glyphs` ships as a dependency so `PhlexForms::Configuration
   # .glyphs_renderer` works out of the box, but it is NOT the default renderer:

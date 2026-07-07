@@ -50,6 +50,14 @@ module PhlexForms
       @field_variants ||= []
     end
 
+    # The default theme: :daisy, :plain, or a PhlexForms::Theme instance.
+    # Defaults to daisy when the daisyui gem is loaded, plain otherwise.
+    attr_writer :theme
+
+    def theme
+      @theme ||= defined?(DaisyUI) ? Theme.daisy : Theme.plain
+    end
+
     def infer_from_model
       return @infer_from_model if defined?(@infer_from_model) && !@infer_from_model.nil?
 

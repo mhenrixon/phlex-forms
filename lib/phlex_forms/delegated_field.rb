@@ -47,5 +47,22 @@ module PhlexForms
 
       ["w-full", @attributes[:class]].compact.join(" ")
     end
+
+    # Unstyled variant of binding_attributes for the Plain theme: caller classes
+    # pass through verbatim, no width class, and an invalid field is flagged via
+    # aria-invalid instead of an error variant class.
+    def unstyled_attributes(**extra)
+      attrs = {
+        name: @name,
+        id: @id,
+        class: @attributes[:class],
+        **@attributes.except(:error, :value, :class),
+        **extra
+      }
+      attrs[:disabled] = true if @disabled
+      attrs[:required] = true if @required
+      attrs[:"aria-invalid"] = true if @error
+      attrs.compact
+    end
   end
 end

@@ -2,10 +2,19 @@
 
 require "date" # Phlex's attribute serializer references Date; ensure it's loaded.
 require "active_support/core_ext/object/blank" # blank?/present?/presence
+require "active_support/core_ext/enumerable" # exclude?
+require "active_support/core_ext/string" # underscore/pluralize/humanize (scope/url/label derivation)
 require "phlex"
-require "daisy_ui"
 require "glyphs"
 require "zeitwerk"
+
+begin
+  require "daisy_ui"
+rescue LoadError
+  # daisyui is a soft dependency: without it the Plain theme is the default.
+  # The daisy leaf components only reference DaisyUI inside view_template, so
+  # they load fine — they just must not be rendered (Theme.daisy raises).
+end
 
 require_relative "phlex_forms/version"
 

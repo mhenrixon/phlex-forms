@@ -29,6 +29,10 @@ module Forms
       @parent_form.default_field_variants
     end
 
+    def theme
+      @parent_form.theme
+    end
+
     # Nested fields_for (single association or has_many collection).
     # nested_attributes: false nests under the raw name (JSONB/hash columns).
     def fields_for(association_name, model = nil, nested_attributes: true, &)

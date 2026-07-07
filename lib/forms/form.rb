@@ -17,13 +17,14 @@ module Forms
     include Phlex::Rails::Helpers::FormAuthenticityToken if defined?(Phlex::Rails::Helpers::FormAuthenticityToken)
     include PhlexForms::Builder
 
-    attr_reader :model, :scope, :url, :method, :errors, :validate
+    attr_reader :model, :scope, :url, :method, :errors, :validate, :theme
 
     def initialize(*modifiers, model: nil, scope: nil, url: nil, method: nil, validate: false,
-                   field_variants: nil, **options)
+                   field_variants: nil, theme: nil, **options)
       super()
       @base_modifiers = modifiers
       @field_variants = Array(field_variants)
+      @theme = PhlexForms::Theme.resolve(theme)
       @options = options
       @model = record_from(model)
       # scope: false opts out of scoping entirely — bare field names for
@@ -60,7 +61,7 @@ module Forms
     end
 
     def submit(*, **, &)
-      render Forms::Submit.new(*, model: @model, **, &)
+      render theme[:submit].new(*, model: @model, **, &)
     end
 
     def rich_textarea(name, *modifiers, **)
