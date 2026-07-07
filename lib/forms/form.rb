@@ -53,8 +53,8 @@ module Forms
     end
 
     # Return a Forms::Field for a name (used by the Builder mixin).
-    def field_object(name)
-      Forms::Field.new(name:, model: @model, scope: @scope, errors: @errors, form: self)
+    def field_object(name, error_name: nil)
+      Forms::Field.new(name:, model: @model, scope: @scope, errors: @errors, form: self, error_name:)
     end
 
     def submit(*, **, &)

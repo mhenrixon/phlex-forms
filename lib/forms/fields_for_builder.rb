@@ -21,8 +21,8 @@ module Forms
       @parent_form.render(...)
     end
 
-    def field_object(name)
-      Forms::Field.new(name:, model: @model, scope: @scope, errors: @errors, form: @parent_form)
+    def field_object(name, error_name: nil)
+      Forms::Field.new(name:, model: @model, scope: @scope, errors: @errors, form: @parent_form, error_name:)
     end
 
     # Nested fields_for (single association or has_many collection).

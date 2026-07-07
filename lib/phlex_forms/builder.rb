@@ -1,14 +1,15 @@
 # frozen_string_literal: true
 
 module PhlexForms
-  # The shared form-builder surface, included by Forms::Form, Forms::Field, and
-  # Forms::FieldsForBuilder so the three no longer copy-paste the API three times.
+  # The shared form-builder surface, included by Forms::Form and
+  # Forms::FieldsForBuilder so the two no longer copy-paste the API.
   #
   # Two layers:
   #
   #   * The Control-first primary verb `field` — renders label + input +
   #     error/hint in one call, inferring the input type and the `required` flag
-  #     from the model.
+  #     from the model (structure, column types, validators — see
+  #     PhlexForms::Inference) with the attribute-name map as tiebreaker.
   #
   #   * Lower-level escape hatches (`Input`, `Select`, `Textarea`, `Checkbox`,
   #     `Toggle`, `FileInput`, `Hidden`, `Label`, `Control`, `submit`) with the
@@ -48,9 +49,10 @@ module PhlexForms
     # Render a complete field: label + control-wrapped input + error/hint.
     #
     #   f.field :email                          # type=email, label auto, required inferred
-    #   f.field :role, as: :select, choices: roles
-    #   f.field :bio, as: :textarea, rows: 6
-    #   f.field :accept, as: :toggle
+    #   f.field :notify                         # boolean column -> toggle
+    #   f.field :role                           # AR enum -> select, humanized
+    #   f.field :country                        # belongs_to -> select over the association
+    #   f.field :bio, as: :textarea, rows: 6    # explicit as: always wins
     #   f.field :name, :primary, label: "Full name", hint: "As on your ID"
     #
     # Options:
@@ -58,19 +60,28 @@ module PhlexForms
     #             pass false to omit the label)
     #   hint:     help text shown when there is no error
     #   as:       override the rendered control (:select, :textarea, :toggle,
-    #             :checkbox, :file, :hidden, and text-like types)
+    #             :checkbox, :file, :hidden, :rich_textarea, and text-like types)
     #   required: force the required flag (otherwise inferred from validations)
-    #   choices:  choices for :select
+    #   choices:  choices for :select (implies as: :select when given)
     # Remaining positional modifiers/keywords pass through to the inner input.
     def field(name, *modifiers, label: nil, hint: nil, as: nil, required: nil,
               choices: nil, **options)
-      fo = field_object(name)
-      req = required.nil? ? fo.required? : required
-      label_text = label == false ? nil : (label || fo.field_label)
+      inferred = PhlexForms::Inference.resolve(model:, name:, as:, modifiers:, choices:)
+      # error_name: for a rewritten field (:country -> :country_id) errors still
+      # live on the association name.
+      fo = field_object(inferred.name, error_name: name)
+      req = required.nil? ? (fo.required? || inferred.required == true) : required
+      label_text = label == false ? nil : (label || inferred.label || fo.field_label)
+      options = inferred.attributes.merge(options)
+      if inferred.multiple
+        options[:multiple] = true unless options.key?(:multiple)
+        options[:name] ||= "#{fo.field_name}[]"
+      end
       options = fo.apply_validations(options)
+      choices ||= materialize_choices(inferred.choices)
 
       render fo.control(label: label_text, hint:, required: req) do
-        render_field_input(fo, name, as, modifiers, choices:, required: req, **options)
+        render_field_input(fo, inferred.name, inferred.as, modifiers, choices:, required: req, **options)
       end
     end
 
@@ -133,16 +144,21 @@ module PhlexForms
     def render_field_input(fo, name, as, modifiers, choices:, required:, **)
       kind = as || resolve_input_type(name, modifiers)
       case kind
-      when :select   then render fo.choices_select(choices, *modifiers, required:, **)
-      when :textarea then render fo.textarea(*modifiers, required:, **)
-      when :toggle   then render fo.toggle(*modifiers, required:, **)
-      when :checkbox then render fo.checkbox(*modifiers, required:, **)
-      when :file     then render fo.file(*modifiers, required:, **)
-      when :hidden   then render fo.hidden(**)
+      when :select        then render fo.choices_select(choices, *modifiers, required:, **)
+      when :textarea      then render fo.textarea(*modifiers, required:, **)
+      when :toggle        then render fo.toggle(*modifiers, required:, **)
+      when :checkbox      then render fo.checkbox(*modifiers, required:, **)
+      when :file          then render fo.file(*modifiers, required:, **)
+      when :hidden        then render fo.hidden(**)
+      when :rich_textarea then render fo.rich_textarea(*modifiers, **)
       else
         type = kind == :datetime ? :"datetime-local" : kind
         render fo.input(*(modifiers - INPUT_TYPE_MODIFIERS), type:, required:, **)
       end
+    end
+
+    def materialize_choices(choices)
+      choices.respond_to?(:call) ? choices.call : choices
     end
 
     def resolve_input_type(name, modifiers)

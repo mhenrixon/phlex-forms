@@ -131,6 +131,71 @@ describe Forms::Form do
     end
   end
 
+  describe "model-driven inference through #field" do
+    it "renders a toggle for a boolean attribute without as:" do
+      model = build_model(:user, notify: nil, validations: -> { attribute :notify, :boolean })
+
+      output = render_form(model) { |f| f.field(:notify) }
+
+      expect(output).to match(/<input[^>]*type="checkbox"[^>]*class="toggle"/)
+      expect(output).to include('name="user[notify]"')
+    end
+
+    it "renders a humanized select for an enum, with the current value selected" do
+      model = build_model(:user, role: "power_user")
+      model.class.define_singleton_method(:defined_enums) do
+        { "role" => { "power_user" => 0, "admin" => 1 } }
+      end
+
+      output = render_form(model) { |f| f.field(:role) }
+
+      expect(output).to include('<option value="power_user" selected>Power user</option>')
+      expect(output).to include('<option value="admin">Admin</option>')
+    end
+
+    it "renders an association select named by the foreign key, showing :country errors" do
+      country = Struct.new(:id, :name)
+      countries = Class.new do
+        define_singleton_method(:all) { [country.new(1, "Sweden"), country.new(2, "Germany")] }
+      end
+      reflection_class = Struct.new(:name, :macro, :foreign_key, :klass, keyword_init: true) do
+        def polymorphic? = false
+      end
+      model = build_model(:user, country_id: 2)
+      reflection = reflection_class.new(
+        name: :country, macro: :belongs_to, foreign_key: "country_id", klass: countries
+      )
+      model.class.define_singleton_method(:reflect_on_association) do |n|
+        reflection if n.to_sym == :country
+      end
+      model.errors.add(:country, "must exist")
+
+      output = render_form(model) { |f| f.field(:country) }
+
+      expect(output).to include('name="user[country_id]"')
+      expect(output).to include('<option value="2" selected>Germany</option>')
+      expect(output).to include("Country must exist")
+    end
+
+    it "renders a select when choices: are given without as:" do
+      model = build_model(:user, role: "admin")
+
+      output = render_form(model) { |f| f.field(:role, choices: [%w[Admin admin], %w[User user]]) }
+
+      expect(output).to include('<option value="admin" selected>Admin</option>')
+    end
+
+    it "emits validator-derived attributes, losing to caller options" do
+      model = build_model(
+        :user, handle: nil,
+        validations: -> { validates :handle, length: { maximum: 30 } }
+      )
+
+      expect(render_form(model) { |f| f.field(:handle) }).to include('maxlength="30"')
+      expect(render_form(model) { |f| f.field(:handle, maxlength: 10) }).to include('maxlength="10"')
+    end
+  end
+
   describe "unscoped mode, JSONB nesting, and value introspection" do
     it "emits bare field names and ids when scope: false" do
       output = render_form(user, scope: false) { |f| f.field(:email) }

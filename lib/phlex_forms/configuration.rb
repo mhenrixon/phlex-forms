@@ -36,6 +36,17 @@ module PhlexForms
 
     attr_writer :icon_renderer
 
+    # Kill-switch for model-driven inference (columns/enums/associations/
+    # validator attributes). Defaults to on; set false to restore pure
+    # attribute-name inference for `field`.
+    attr_writer :infer_from_model
+
+    def infer_from_model
+      return @infer_from_model if defined?(@infer_from_model) && !@infer_from_model.nil?
+
+      true
+    end
+
     def icon_renderer
       @icon_renderer ||= ->(name, **opts) { InlineIcons.render(name, **opts) }
     end

@@ -4,13 +4,17 @@
 # error set. Builds the concrete leaf components (input/textarea/select/...) with
 # name/id/value/error wired in, and derives the label text and required flag.
 #
-# Not usually built directly — `Form#field(:name)` / the builder return one.
+# Not usually built directly — `Form#field_object(:name)` / the builder return one.
 module Forms
   class Field
     attr_reader :name, :model, :scope, :errors
 
-    def initialize(name:, model:, scope:, errors:, form:)
+    # error_name: where errors live when it differs from the input's name — an
+    # inferred belongs_to select is named :country_id but Rails attaches its
+    # errors to :country.
+    def initialize(name:, model:, scope:, errors:, form:, error_name: nil)
       @name = name
+      @error_name = error_name || name
       @model = model
       @scope = scope
       @errors = errors
@@ -113,7 +117,9 @@ module Forms
     end
 
     def invalid?
-      @errors&.include?(@name)
+      return false unless @errors
+
+      @errors.include?(@name) || @errors.include?(@error_name)
     end
 
     def field_name
@@ -207,7 +213,9 @@ module Forms
     end
 
     def field_error_message
-      @errors&.full_messages_for(@name)&.first if invalid?
+      return nil unless invalid?
+
+      @errors.full_messages_for(@name).first || @errors.full_messages_for(@error_name).first
     end
 
     def select_options(options)
