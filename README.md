@@ -1,20 +1,38 @@
 # phlex-forms
 
-A model-bound, DaisyUI-styled form builder for [Phlex](https://www.phlex.fun).
-
-`Form(model:) { |f| f.field :email }` renders a label, an input, and an
-error/hint in **one call** — inferring the input type from the attribute name and
-the `required` flag from the model's validations. It's built on the
-[`daisyui`](https://github.com/mhenrixon/daisyui) gem, so every field is a thin
-binding layer over a real DaisyUI component: positional variants stack, blocks
-pass through, and the markup stays DaisyUI v5-correct.
+A model-bound form builder for [Phlex](https://www.phlex.fun) — forms as
+first-class Phlex classes, types inferred from your model, DaisyUI styling by
+default (and a plain-HTML theme when you want none), and optional
+**server-truth live validation** over
+[phlex-reactive](https://github.com/mhenrixon/phlex-reactive).
 
 ```ruby
-Form(:spaced, model: @user) do |f|
-  f.field :email, hint: t("users.email_hint")      # type=email, required inferred
-  f.field :role,  as: :select, choices: roles
-  f.field :bio,   as: :textarea, rows: 6
-  f.field :notify, as: :toggle
+class UserForm < Forms::Base
+  live model: User                 # real validators, live, focus preserved
+
+  def fields                       # self IS the form — no f. prefix
+    field :email                   # name → type=email, required inferred
+    field :role                    # AR enum → select, humanized
+    field :country                 # belongs_to → select over the association
+    field :notify                  # boolean column → toggle
+    field :bio                     # text column → textarea
+    row do
+      field :first_name
+      field :last_name
+    end
+    submit :primary
+  end
+end
+
+render UserForm.new(model: @user)
+```
+
+For one-offs, the inline builder does the same with a yielded form:
+
+```ruby
+Form(model: @user) do |f|
+  f.field :email, hint: t("users.email_hint")
+  f.field :bio
   f.submit :primary
 end
 ```
@@ -24,6 +42,8 @@ end
 ```ruby
 # Gemfile
 gem "phlex-forms"
+gem "daisyui"        # optional — the daisy theme; omit for plain semantic HTML
+gem "phlex-reactive" # optional — the `live` server-truth validation
 ```
 
 phlex-forms exposes its components under the `Forms::` namespace as a
@@ -36,36 +56,109 @@ class ApplicationComponent < Phlex::HTML
 end
 ```
 
-Now `Form(...)`, `Submit(...)`, and every other `Forms::*` component are available
-as bare kit helpers.
+## Form classes (`Forms::Base`)
+
+Subclass `Forms::Base`, declare the fields in `#fields`, render. The whole
+builder surface (`field`, `row`, `group`, `Input`, `submit`, `fields_for`, …)
+is available as bare calls — the form is an object you can reuse, subclass,
+and test in isolation.
+
+```ruby
+class ApplicationForm < Forms::Base
+  form_options :spaced, field_variants: [:primary]   # inherited defaults
+end
+
+class UserForm < ApplicationForm
+  form_options url: "/signup"                        # merged over the parent's
+
+  def fields
+    field :email
+    submit :primary
+  end
+end
+
+render UserForm.new(model: @user)                    # instance args win
+render UserForm.new(model: @user) { |f| f.Hidden(:token) }  # appends after fields
+```
 
 ## The `field` API
 
-`f.field(name, *modifiers, **options)` is the primary verb. It renders a
-`form-control` wrapping a label, the input, and an error (or hint):
+`f.field(name, *modifiers, **options)` is the primary verb: one call renders a
+control wrapping the label, the input, and an error (or hint).
 
 | Option | Effect |
 | --- | --- |
 | `label:` | Label text. Defaults to the model's humanized attribute name. `label: false` omits it. |
 | `hint:` | Help text shown when there is no error. |
-| `as:` | Override the control: `:select`, `:textarea`, `:toggle`, `:checkbox`, `:file`, `:radio`, `:hidden`, or any text-like type. |
+| `as:` | Override the control: `:select`, `:textarea`, `:toggle`, `:checkbox`, `:file`, `:radio`, `:hidden`, `:rich_textarea`, or any text-like type. |
 | `required:` | Force the required flag. Otherwise inferred from the model's presence validators. |
-| `choices:` | Choices for `as: :select`. |
+| `choices:` | Choices for a select (implies `as: :select`). |
 | positional modifiers | daisyui variants — `:primary`, `:lg`, `:ghost`, … — stacked onto the input. |
 
-Type is inferred from the attribute name (`email` → `type=email`, `password` →
-`type=password`, `phone` → `type=tel`, …).
+### Model-driven inference
 
-### Escape hatches
+`field :x` interrogates the bound model, so `as:` is an override, not a
+requirement. Precedence (first hit wins):
 
-When you need full control (custom Stimulus wiring, bespoke layout), the
-lower-level component methods are always available with stable signatures:
+1. Explicit `as:`
+2. A positional type modifier (`field :price, :number`)
+3. `choices:` → select
+4. Model structure — `has_rich_text` → rich textarea; ActiveStorage attachment
+   → file input (`multiple` for `has_many_attached`); ActiveRecord enum →
+   select over humanized keys; non-polymorphic `belongs_to` (as `:country` or
+   `:country_id`) → select over the association (`name="user[country_id]"`,
+   label and required flag from the association, errors surface from
+   `:country`)
+5. Non-string column type — boolean → toggle, text → textarea,
+   date/datetime/time → matching inputs, integer/decimal/float → number with
+   a sensible `step`
+6. The attribute-name map (`email` → `type=email`, `password` →
+   `type=password`, `phone` → `type=tel`, …)
+7. `type=text`
+
+Length and numericality validators also emit `maxlength`/`min`/`max`
+(conditional validators are skipped; caller options always win). Everything is
+duck-typed behind `respond_to?` guards — plain objects, Structs, and form
+objects fall through to the name map, exactly as before. Opt out entirely
+with:
 
 ```ruby
-f.Control(:email, label: "Email") do
-  f.Input(:email, :primary, data: { controller: "autocomplete" })
-end
+PhlexForms.configure { |c| c.infer_from_model = false }
+```
 
+Association selects load `klass.all` per render — pass `choices:` to scope,
+order, or cache.
+
+### Variants
+
+daisyui variants stack positionally, per field or as defaults:
+
+```ruby
+f.field :email, :primary, :sm                        # this field
+Form(model: @user, field_variants: [:primary])       # every field in this form
+form_options field_variants: [:primary]              # every field in this class
+PhlexForms.configure { |c| c.field_variants = [:sm] }  # everywhere
+```
+
+Defaults stack first, call-site modifiers last — the most local wins.
+
+### Layout
+
+```ruby
+row { field :first_name; field :last_name }   # responsive grid, columns: 2|3|4
+group(legend: "Address") do                   # <fieldset> + legend
+  field :street
+  field :city
+end
+```
+
+Both work on inline forms (`f.row { … }`) and inside `fields_for` builders.
+
+## Escape hatches & custom widgets
+
+The lower-level component methods are always available with stable signatures:
+
+```ruby
 f.Input(:name, :primary, :lg)     # bare input, variants stacked
 f.Select(:role, choices: roles)   # native <select>
 f.Textarea(:bio, :ghost)
@@ -73,21 +166,127 @@ f.Checkbox(:terms) ; f.Toggle(:notify) ; f.FileInput(:avatar)
 f.Label(:email) ; f.Hidden(:token) ; f.submit("Save", :primary)
 ```
 
-### Icons inside a field (DaisyUI v5)
-
-`WrappedInput` renders the `<label class="input">{icon}{input}` pattern:
+For a bespoke widget (date picker, tag field, remote select), wrap it in
+`f.Control` and bind through the public helpers — this is the supported path,
+not a fork reason:
 
 ```ruby
-f.field(:search).wrapped_input(:primary) do
-  LucideIcon("search", class: "opacity-50")   # leading content
+f.Control(:starts_at, label: "Starts") do
+  render MyDatePicker.new(
+    name: f.field_name(:starts_at),
+    id: f.field_id(:starts_at),
+    value: f.field_value(:starts_at)
+  )
 end
 ```
 
-## Nested attributes & collections
+Icons inside a field (daisyui v5 `<label class="input">` pattern):
+
+```ruby
+f.field(:search).wrapped_input(:primary) do
+  LucideIcon("search", class: "opacity-50")
+end
+```
+
+## Themes — using phlex-forms without daisyui
+
+Every component resolves through a theme (a role → component-class map). With
+the daisyui gem loaded, the daisy theme is the default. Without it — or on
+demand — the **Plain theme** renders bare semantic HTML: the same binding
+(names, ids, values, required, errors), variants accepted and ignored, no
+styling classes, and stable hooks (`aria-invalid`, `role="alert"`,
+`data-field-error`, `data-field-hint`, `data-form-row`) for your own CSS.
+
+```ruby
+render UserForm.new(model: @user, theme: :plain)     # per render
+form_options theme: :plain                           # per class
+PhlexForms.configure { |c| c.theme = :plain }        # global
+
+# override single roles:
+PhlexForms.configure do |c|
+  c.theme = PhlexForms::Theme.resolve(:plain).with(input: MyInput)
+end
+```
+
+The same `UserForm` class renders under either theme — write the form once,
+style it per project. (Plain degradations: `searchable:` selects fall back to
+the native select; `rich_textarea` falls back to a plain textarea.)
+
+## Live validation (server-truth, via phlex-reactive)
+
+The `live` macro turns the whole form into one reactive component. Blurring a
+field (or typing, debounced) POSTs **all** form fields to a single signed
+`:validate` action; the server assigns a whitelisted slice to the model, runs
+the **real** ActiveModel validators, and morphs the errors back in — the
+focused input and caret survive.
+
+```ruby
+class UserForm < Forms::Base
+  live model: User, debounce: 300
+
+  def fields
+    field :email                  # uniqueness validates against the real DB
+    field :password
+    field :password_confirmation  # cross-field confirmation just works
+    submit :primary
+  end
+end
+```
+
+What you get over any client-side mirror:
+
+- **One source of truth** — uniqueness, `:if`/`:unless`, `:on` contexts,
+  cross-field and custom validators all run, because it *is* your model.
+- **i18n is plain Rails i18n** — no duplicated message catalogs.
+- **No premature errors** — a field's error first appears on blur (`touched`
+  tracking rides the signed token; zero client-side bookkeeping), while fixing
+  a field live-updates errors of fields you already touched.
+- **Progressive enhancement** — nothing is ever persisted by `:validate`;
+  native submit and your controller stay authoritative. A failed-submit 422
+  re-render shows all errors as usual.
+
+Constraints: `live` needs a `Forms::Base` subclass (the endpoint rebuilds the
+form from its class — an inline block cannot be serialized; `Form(live: true)`
+raises and says so). Collection controls (`collection_check_boxes`,
+multi-selects) are excluded from live assignment in v1. Use
+`live_permit`/`live_deny` to adjust the assignable attributes; setters run on
+an in-memory model only.
+
+### Client-side fallback (`validate: true`)
+
+Without phlex-reactive, the bundled Stimulus framework mirrors your validators
+client-side:
+
+```ruby
+Form(model: @partner, validate: true) do |f|
+  f.field :title                              # every validator on :title
+  f.field :slug, validate: false              # opt this field out
+  f.field :note, validate: { length: { maximum: 30 } }  # explicit rules
+end
+```
+
+Supported: presence, length (with a live counter), format, numericality,
+inclusion, exclusion, confirmation, acceptance. Validators with
+`:if`/`:unless`/`:on` are skipped; uniqueness can't be checked client-side —
+the server stays authoritative. Register the controllers:
+
+```js
+// app/javascript/controllers/index.js
+import { lazyLoadControllersFrom } from "@hotwired/stimulus-loading"
+lazyLoadControllersFrom("phlex_forms/controllers", application)
+```
+
+Messages ship for `en` / `fr` / `af`; override via `window.PhlexForms.messages`.
+
+## Nested attributes, collections & escape valves
 
 ```ruby
 f.fields_for(:line_items) do |item|          # single assoc or has_many
   item.field :description
+end
+
+f.fields_for(:settings, nested_attributes: false) do |s|
+  s.field :locale                            # user[settings][locale] — JSONB/hash columns
 end
 
 f.collection_check_boxes(:role_ids, Role.all, :id, :name) do |b|
@@ -98,40 +297,15 @@ end
 f.collection_select(:country_id, Country.all, :id, :name, prompt: "Select…")
 ```
 
-## Client-side validation
-
-phlex-forms ships a Stimulus validation framework that mirrors your ActiveModel
-validators — no ugly, browser-inconsistent native validation bubbles.
-
-```ruby
-Form(model: @partner, validate: true) do |f|
-  f.field :title                              # every validator on :title
-  f.field :slug, validate: false             # opt this field out
-  f.field :note, validate: { length: { maximum: 30 } }  # explicit rules
-end
-```
-
-When `validate: true`, the form gets `novalidate` and a submit coordinator; each
-field emits `data-forms--validations--*` bindings introspected from the model.
-Supported: presence, length (with a live counter), format, numericality,
-inclusion, exclusion, confirmation, acceptance. Validators with `:if` / `:unless`
-/ `:on` are skipped (they need server context); the server stays authoritative.
-
-Register the controllers in your Stimulus setup:
-
-```js
-// app/javascript/controllers/index.js
-import { lazyLoadControllersFrom } from "@hotwired/stimulus-loading"
-lazyLoadControllersFrom("phlex_forms/controllers", application)
-```
-
-Validation messages ship for `en` / `fr` / `af`; override any string via
-`window.PhlexForms.messages`.
+`Form(model: @item, scope: false)` emits **bare** field names
+(`name="quantity"`) — the shape phlex-reactive row editors and
+`<template>`-cloned rows need. External widgets bind through the public
+`f.field_name` / `f.field_id` / `f.field_value` helpers.
 
 ## Icons
 
 Icons default to a bundled inline SVG so the gem is self-contained. To use
-[`glyphs`](https://rubygems.org/gems/glyphs) (rails-icons under the hood):
+[`glyphs`](https://rubygems.org/gems/glyphs):
 
 ```ruby
 PhlexForms.configure do |c|
@@ -155,10 +329,13 @@ inherit_gem:
 - `PhlexForms/LegacyFormMethod` — use `form.field(...)` / the PascalCase methods
   over Rails-style `text_field` / `select` / etc.
 
-## JavaScript peer dependencies
+## Dependencies
 
-- `@hotwired/stimulus` — required.
-- `choices.js` — only if you use searchable/multi selects (`searchable: true`).
+- Hard: `phlex` (~> 2.0), `activesupport`, `zeitwerk`, `glyphs`.
+- Soft: `daisyui` (the daisy theme — without it the Plain theme is the
+  default), `phlex-reactive` (the `live` macro).
+- JS peers: `@hotwired/stimulus` (client validation fallback), `choices.js`
+  (only for `searchable: true` selects).
 
 ## Companion
 
