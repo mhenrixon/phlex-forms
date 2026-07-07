@@ -83,6 +83,9 @@ Performance/FlatMap:
   Enabled: true
   EnabledForFlattenWithoutParams: true
 
+RSpec/DescribeClass:
+  Enabled: false
+
 RSpec/ContextWording:
   Prefixes:
     - and

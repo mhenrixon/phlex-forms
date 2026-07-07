@@ -28,6 +28,11 @@ module Forms
     end
     alias text_area textarea
 
+    def rich_textarea(*modifiers, **)
+      Forms::RichTextarea.new(*modifiers, name: field_name, id: field_id, value: field_value, **)
+    end
+    alias rich_text_area rich_textarea
+
     def hidden(**)
       Forms::Input.new(type: :hidden, **field_attributes, **)
     end

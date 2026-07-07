@@ -59,11 +59,83 @@ module Forms
       render Forms::Submit.new(*, model: @model, **, &)
     end
 
+    def rich_textarea(name, *modifiers, **)
+      render field_object(name).rich_textarea(*modifiers, **)
+    end
+    alias rich_text_area rich_textarea
+
+    def time_zone_select(name, *modifiers, selected: nil, **)
+      render Forms::TimeZoneSelect.new(
+        *modifiers,
+        name: field_name(name),
+        id: field_id(name),
+        selected: selected || @model&.public_send(name),
+        **
+      )
+    end
+
+    # Nested attributes. Yields a FieldsForBuilder per association (single) or per
+    # item (has_many), with the correctly-indexed nested scope.
+    def fields_for(association_name, model = nil, &)
+      return unless block_given?
+
+      associated = model || (@model.public_send(association_name) if @model.respond_to?(association_name))
+      attributes_key = "#{association_name}_attributes"
+      base_scope = @scope ? "#{@scope}[#{attributes_key}]" : attributes_key
+
+      if associated.respond_to?(:each_with_index)
+        associated.each_with_index do |item, index|
+          yield build_fields_for("#{base_scope}[#{index}]", item)
+        end
+      else
+        yield build_fields_for(base_scope, associated)
+      end
+    end
+
+    # Rails-style collection_check_boxes. Emits a hidden field so an empty
+    # selection still submits, then yields a builder per collection item.
+    def collection_check_boxes(name, collection, value_method, text_method, &)
+      return unless block_given?
+
+      input(type: "hidden", name: "#{field_name(name)}[]", value: "")
+      current = Array(@model&.public_send(name))
+      current_ids = current.map { |v| v.respond_to?(value_method) ? v.public_send(value_method) : v }
+
+      collection.each do |item|
+        item_value = item.public_send(value_method)
+        item_text = text_method.is_a?(Proc) ? text_method.call(item) : item.public_send(text_method)
+        yield Forms::CollectionCheckBoxBuilder.new(
+          object: item, value: item_value, text: item_text,
+          checked: current_ids.include?(item_value),
+          name: "#{field_name(name)}[]", id: "#{field_id(name)}_#{item_value}"
+        )
+      end
+    end
+
+    # Rails-style collection_select over an enumerable of records.
+    def collection_select(name, collection, value_method, text_method, options = {}, html_options = {})
+      choices = collection.map do |item|
+        text = text_method.is_a?(Proc) ? text_method.call(item) : item.public_send(text_method)
+        [text, item.public_send(value_method)]
+      end
+      choices = [[options[:prompt], ""]] + choices if options[:prompt]
+      render field_object(name).select(choices, **options.except(:prompt), **html_options)
+    end
+
     # Public name/id/value helpers for external components mirroring the Rails API.
     def field_name(name) = @scope ? "#{@scope}[#{name}]" : name.to_s
     def field_id(name)   = @scope ? "#{@scope}_#{name}" : name.to_s
 
     private
+
+    def build_fields_for(scope, item)
+      Forms::FieldsForBuilder.new(
+        model: item,
+        scope:,
+        errors: (item.errors if item.respond_to?(:errors)),
+        parent_form: self
+      )
+    end
 
     # For a polymorphic array model, the record is the last element.
     def record_from(model)
