@@ -1,19 +1,23 @@
 # frozen_string_literal: true
 
-# A form label. Standalone by default: renders `<label><span class="label">…</span></label>`
-# with an optional required marker. A block, when given, is yielded directly
-# inside the `<label>` so checkboxes/toggles can be nested as direct children.
 module Forms
-  class Label < Forms::Base
-    def initialize(*, text: nil, for: nil, required: false, **)
-      super(*, **)
+  # A standalone form label: `<label for><span class="label">text</span></label>`
+  # with an optional required marker. A block, when given, is yielded directly
+  # inside the `<label>` so checkboxes/toggles can nest as direct children.
+  #
+  # For the daisyui v5 "text/icon inside the field" wrapper (<label class="input">
+  # {span.label}{input}), use Forms::WrappedInput instead.
+  class Label < Phlex::HTML
+    def initialize(text: nil, for: nil, required: false, **attributes)
       @text = text
       @for = grab(for:)
       @required = required
+      @attributes = attributes
+      super()
     end
 
     def view_template(&block)
-      label(for: @for, class: label_classes.presence, **options.except(:class)) do
+      label(for: @for, class: @attributes[:class], **@attributes.except(:class)) do
         if block
           yield
         elsif @text
@@ -24,20 +28,5 @@ module Forms
         end
       end
     end
-
-    private
-
-    def label_classes
-      merge_classes(*registered_modifier_classes, options[:class])
-    end
-
-    register_modifiers(
-      top: "label-top",
-      bottom: "label-bottom",
-      start: "label-start",
-      end: "label-end",
-      clickable: "cursor-pointer",
-      alt: "label-text-alt"
-    )
   end
 end

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-# Inline hint/help text shown beneath a field.
 module Forms
+  # Inline hint/help text shown beneath a field.
   class FieldHint < Phlex::HTML
     def initialize(text: nil, **options)
       @text = text
@@ -12,15 +12,13 @@ module Forms
     def view_template
       return unless @text
 
-      div(class: "label") do
-        span(class: classes) { @text }
-      end
+      p(class: classes) { @text }
     end
 
     private
 
     def classes
-      PhlexForms::ClassMerge.merge("label-text-alt", @options[:class])
+      PhlexForms::ClassMerge.merge("text-base-content/60 text-sm mt-1", @options[:class])
     end
   end
 end

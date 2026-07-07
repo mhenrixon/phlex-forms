@@ -37,7 +37,9 @@ describe Forms::Form do
         f.field(:role, as: :select, choices: [%w[Admin admin], %w[User user]])
       end
 
-      expect(output).to include('<select name="user[role]" id="user_role" class="select w-full">')
+      expect(output).to match(/<select[^>]*class="select w-full"/)
+      expect(output).to include('name="user[role]"')
+      expect(output).to include('id="user_role"')
       expect(output).to include('<option value="admin" selected>Admin</option>')
       expect(output).to include('<option value="user">User</option>')
     end
@@ -45,14 +47,18 @@ describe Forms::Form do
     it "renders a textarea when as: :textarea" do
       output = render_form(user) { |f| f.field(:bio, as: :textarea, rows: 5) }
 
-      expect(output).to include('<textarea name="user[bio]" id="user_bio" rows="5" class="textarea w-full">')
+      expect(output).to match(/<textarea[^>]*class="textarea w-full"/)
+      expect(output).to include('name="user[bio]"')
+      expect(output).to include('rows="5"')
     end
 
     it "renders a toggle (with the hidden unchecked field) when as: :toggle" do
       output = render_form(user) { |f| f.field(:notify, as: :toggle) }
 
       expect(output).to include('<input type="hidden" name="user[notify]" value="0">')
-      expect(output).to include('type="checkbox" name="user[notify]" id="user_notify" value="1" class="toggle"')
+      expect(output).to match(/<input[^>]*type="checkbox"[^>]*class="toggle"/)
+      expect(output).to include('name="user[notify]"')
+      expect(output).to include('value="1"')
     end
 
     it "omits the required marker for a non-validated attribute" do
@@ -129,7 +135,7 @@ describe Forms::Form do
     it "defaults to the create label for a new record" do
       output = render_form(user) { |f| f.submit(:primary) }
 
-      expect(output).to include('<button type="submit" class="btn btn-primary">')
+      expect(output).to match(/<button[^>]*class="btn btn-primary"[^>]*type="submit"/)
       expect(output).to include("Create User")
     end
   end

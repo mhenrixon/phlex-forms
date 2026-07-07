@@ -1,12 +1,16 @@
 # frozen_string_literal: true
 
-# A native daisyui-styled `<select>`. daisyui v5 puts the `select` class directly
-# on the `<select>` element (no wrapper label needed).
 module Forms
-  class Select < Forms::Base
-    def initialize(*, name: nil, id: nil, choices: [], selected: nil,
-                   include_blank: false, prompt: nil, error: false, disabled: false, required: false, **)
-      super(*, **)
+  # A model-bound native `<select>`. Delegates the element + variants to
+  # DaisyUI::Select (daisyui v5 puts the `select` class on the element itself)
+  # and renders the options from `choices` inside its block.
+  class Select < Phlex::HTML
+    include PhlexForms::DelegatedField
+
+    def initialize(*modifiers, name: nil, id: nil, choices: [], selected: nil,
+                   include_blank: false, prompt: nil, error: false, disabled: false,
+                   required: false, full_width: true, **attributes)
+      @modifiers = normalize_modifiers(modifiers)
       @name = name
       @id = id
       @choices = choices
@@ -16,76 +20,54 @@ module Forms
       @error = error
       @disabled = disabled
       @required = required
+      @full_width = full_width
+      @attributes = attributes
+      super()
     end
 
     def view_template
-      select(**attrs) do
-        render_prompt if @prompt || @include_blank
-        render_choices
+      render DaisyUI::Select.new(*daisy_modifiers, **binding_attributes) do |el|
+        render_prompt(el) if @prompt || @include_blank
+        render_choices(el)
       end
     end
 
     private
 
-    def attrs
-      a = { name: @name, id: @id, class: final_classes, **options.except(:class, :value, :error) }
-      a[:disabled] = true if @disabled
-      a[:required] = true if @required
-      a.compact
-    end
-
-    def final_classes
-      error_class = "select-error" if @error && modifiers.exclude?(:error)
-      merge_classes("select w-full", error_class, *registered_modifier_classes, options[:class])
-    end
-
-    def render_prompt
+    # The options are rendered inside DaisyUI::Select's block, so option/optgroup
+    # resolve to the daisyui component's Phlex methods (yielded as `s`).
+    def render_prompt(el)
       text = @prompt || (@include_blank.is_a?(String) ? @include_blank : "")
-      option(value: "", selected: @selected.blank?) { text }
+      el.option(value: "", selected: @selected.blank?) { text }
     end
 
-    def render_choices
+    def render_choices(el)
       case @choices
-      when Hash then render_hash_choices(@choices)
-      else render_array_choices(Array(@choices))
+      when Hash then render_hash_choices(el, @choices)
+      else render_array_choices(el, Array(@choices))
       end
     end
 
-    def render_array_choices(choices)
+    def render_array_choices(el, choices)
       choices.each do |choice|
         if choice.is_a?(Array)
-          option(value: choice.last.to_s, selected: @selected.to_s == choice.last.to_s) { choice.first.to_s }
+          el.option(value: choice.last.to_s, selected: @selected.to_s == choice.last.to_s) { choice.first.to_s }
         else
-          option(value: choice.to_s, selected: @selected.to_s == choice.to_s) { choice.to_s }
+          el.option(value: choice.to_s, selected: @selected.to_s == choice.to_s) { choice.to_s }
         end
       end
     end
 
-    def render_hash_choices(choices)
+    def render_hash_choices(el, choices)
       choices.each do |label, value|
         if value.is_a?(Array) || value.is_a?(Hash)
-          optgroup(label:) { value.is_a?(Array) ? render_array_choices(value) : render_hash_choices(value) }
+          el.optgroup(label:) do
+            value.is_a?(Array) ? render_array_choices(el, value) : render_hash_choices(el, value)
+          end
         else
-          option(value: value.to_s, selected: @selected.to_s == value.to_s) { label.to_s }
+          el.option(value: value.to_s, selected: @selected.to_s == value.to_s) { label.to_s }
         end
       end
     end
-
-    register_modifiers(
-      primary: "select-primary",
-      secondary: "select-secondary",
-      accent: "select-accent",
-      info: "select-info",
-      success: "select-success",
-      warning: "select-warning",
-      error: "select-error",
-      neutral: "select-neutral",
-      ghost: "select-ghost",
-      xs: "select-xs",
-      sm: "select-sm",
-      md: "select-md",
-      lg: "select-lg",
-      xl: "select-xl"
-    )
   end
 end

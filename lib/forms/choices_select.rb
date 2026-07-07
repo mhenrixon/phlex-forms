@@ -1,15 +1,19 @@
 # frozen_string_literal: true
 
-# A searchable/multi-select `<select>` enhanced by the choices.js Stimulus
-# controller (shipped with the gem). Renders a normal `<select>` server-side; the
-# `choices` controller upgrades it on connect. Size/color are passed as data
-# values and applied to the choices.js wrapper by the controller.
 module Forms
-  class ChoicesSelect < Forms::Base
-    def initialize(*, name: nil, id: nil, choices: [], selected: nil, multiple: false,
+  # A searchable/multi-select `<select>` enhanced by the choices.js Stimulus
+  # controller (shipped with the gem). Renders a normal `<select>` server-side;
+  # the `choices` controller upgrades it on connect. choices.js replaces the
+  # element, so size/color positional modifiers are passed as data values and
+  # applied to the choices.js wrapper by the controller (not as daisyui classes).
+  class ChoicesSelect < Phlex::HTML
+    SIZE_MODIFIERS = %i[xs sm md lg xl].freeze
+    COLOR_MODIFIERS = %i[primary secondary accent neutral info success warning error].freeze
+
+    def initialize(*modifiers, name: nil, id: nil, choices: [], selected: nil, multiple: false,
                    searchable: false, remove_item_button: nil, placeholder: nil,
-                   include_blank: false, prompt: nil, error: false, disabled: false, required: false, **)
-      super(*, **)
+                   include_blank: false, prompt: nil, error: false, disabled: false, required: false, **options)
+      @modifiers = modifiers
       @name = name
       @id = id
       @choices = choices
@@ -23,6 +27,8 @@ module Forms
       @error = error
       @disabled = disabled
       @required = required
+      @options = options
+      super()
     end
 
     def view_template
@@ -38,9 +44,9 @@ module Forms
       a = {
         name: select_name,
         id: @id,
-        class: PhlexForms::ClassMerge.merge("choices-select w-full", options[:class]),
+        class: PhlexForms::ClassMerge.merge("choices-select w-full", @options[:class]),
         data: stimulus_data,
-        **options.except(:class, :value, :data)
+        **@options.except(:class, :value, :data)
       }
       a[:multiple] = true if @multiple
       a[:disabled] = true if @disabled
@@ -55,7 +61,7 @@ module Forms
     end
 
     def stimulus_data
-      base = options[:data] || {}
+      base = @options[:data] || {}
       {
         controller: [base[:controller], "choices"].compact.join(" "),
         choices_searchable_value: @searchable,
@@ -68,12 +74,11 @@ module Forms
     end
 
     def size_value
-      %i[xs sm md lg xl].find { |s| modifiers.include?(s) }.to_s
+      (@modifiers & SIZE_MODIFIERS).first.to_s
     end
 
     def color_value
-      (%i[primary secondary accent neutral info success warning error]
-        .find { |c| modifiers.include?(c) } || :primary).to_s
+      ((@modifiers & COLOR_MODIFIERS).first || :primary).to_s
     end
 
     def render_prompt
@@ -123,11 +128,5 @@ module Forms
         @selected.to_s == value.to_s
       end
     end
-
-    register_modifiers(
-      primary: nil, secondary: nil, accent: nil, neutral: nil,
-      info: nil, success: nil, warning: nil, error: nil,
-      xs: nil, sm: nil, md: nil, lg: nil, xl: nil
-    )
   end
 end

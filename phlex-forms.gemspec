@@ -43,6 +43,7 @@ Gem::Specification.new do |s|
 
   s.required_ruby_version = ">= 3.2"
 
+  s.add_dependency "activesupport", ">= 7.0"
   s.add_dependency "daisyui", "~> 1.2"
   s.add_dependency "glyphs", ">= 0.1.0"
   s.add_dependency "phlex", "~> 2.0", ">= 2.0.0"

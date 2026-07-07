@@ -68,8 +68,10 @@ Naming/BlockForwarding:
 Naming/MethodParameterName:
   AllowedNames:
     - as
+    - el
     - fo
     - id
+    - to
 
 # Component builder methods are intentionally PascalCase (Input, Select, ...) to
 # mirror Phlex kit-helper naming; the callable methods and their symbol names

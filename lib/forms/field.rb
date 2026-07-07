@@ -32,6 +32,12 @@ module Forms
       Forms::Input.new(type: :hidden, **field_attributes, **)
     end
 
+    # daisyui v5 "icon/text inside the field" wrapper. The block renders the
+    # leading content (icon, prefix); the bare input is wired to this field.
+    def wrapped_input(*modifiers, type: :text, **, &)
+      Forms::WrappedInput.new(*modifiers, type:, **field_attributes.except(:error), error: invalid?, **, &)
+    end
+
     def file(*modifiers, **)
       Forms::FileInput.new(*modifiers, **field_attributes.except(:value), **)
     end
