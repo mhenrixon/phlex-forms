@@ -91,6 +91,17 @@ module Forms
       end
     end
 
+    # A model-bound tag/chip input (phlex-reactive client-only primitives).
+    # suggestions: an Array of tags or a Hash of tag => haystack (synonyms the
+    # filter matches). Submits one comma-joined param under the field name.
+    def tag_field(*modifiers, suggestions: [], **)
+      theme[:tag_field].new(
+        *modifiers,
+        name: field_name, id: field_id, value: field_value,
+        suggestions:, error: invalid?, **
+      )
+    end
+
     def label(text = nil, *modifiers, **, &block)
       theme[:label].new(*modifiers, text: text || (block ? nil : field_label), for: field_id, **, &block)
     end

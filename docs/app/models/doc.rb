@@ -25,6 +25,7 @@ class Doc
   page "The field API",   group: "Guide", slug: "field-api", view: "FieldApi"
   page "Type inference",  group: "Guide", slug: "inference", view: "Inference"
   page "Form classes",    group: "Guide", slug: "form-classes", view: "FormClasses"
+  page "Tag fields",      group: "Guide", slug: "tag-fields", view: "TagFields"
   page "Layout",          group: "Guide"
   page "Variants",        group: "Guide"
   page "Theming",         group: "Guide"

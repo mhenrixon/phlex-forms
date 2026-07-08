@@ -168,6 +168,9 @@ module PhlexForms
       when :file          then render fo.file(*modifiers, required:, **)
       when :hidden        then render fo.hidden(**)
       when :rich_textarea then render fo.rich_textarea(*modifiers, **)
+      # The tag widget's value lives in a hidden field; `required` on it can't be
+      # satisfied by the browser, so drop it (validate server-side instead).
+      when :tags          then render fo.tag_field(*modifiers, **)
       else
         type = kind == :datetime ? :"datetime-local" : kind
         render fo.input(*(modifiers - INPUT_TYPE_MODIFIERS), type:, required:, **)

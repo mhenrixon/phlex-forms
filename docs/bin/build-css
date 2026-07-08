@@ -13,7 +13,10 @@ cd "$(dirname "$0")/.."
 GENERATED="app/assets/stylesheets/tailwind.sources.css"
 
 sources=""
-for gem in daisyui docs-kit; do
+# phlex-forms is scanned too: the docs render real gem components (e.g. the live
+# tag_field on /docs/tag-fields), whose literal class strings (badge / menu /
+# input …) Tailwind must see or the widget ships unstyled.
+for gem in daisyui docs-kit phlex-forms; do
   if ! path="$(bundle show "$gem" 2>/dev/null)"; then
     echo "bin/build-css: could not resolve gem path for '$gem' (bundle show failed)." >&2
     echo "  Tailwind would drop its component classes from the build. Aborting." >&2
