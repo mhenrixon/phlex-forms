@@ -19,9 +19,10 @@ if defined?(Phlex::Reactive)
       expect(output).to include("data-reactive-tags-list")
       expect(output).to include("data-reactive-tags-template")
       expect(output).to include("data-reactive-tag=\"Ruby\"")
-      expect(output).to include("data-reactive-tags-add")
-      expect(output).to include("data-reactive-tags-option-param=")
-      expect(output).to include("data-reactive-tags-remove-param=")
+      expect(output).to include("keydown.enter->reactive#tagsAdd")
+      expect(output).to include("click->reactive#tagsPick")
+      expect(output).to include("click->reactive#tagsRemove")
+      expect(output).to include("data-reactive-tag-param=")
       expect(output).to include("data-reactive-filter-text=\"postgres db\"")
     end
 

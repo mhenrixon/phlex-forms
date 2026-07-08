@@ -55,8 +55,20 @@ if defined?(Phlex::Reactive)
         expect(output).to include('data-reactive-tag="Ruby"')
         expect(output).to include('data-reactive-tag="Rails"')
         expect(output).to include("data-reactive-tag-text") # valueless boolean attr
-        # the remove button carries the per-chip remove param
-        expect(output).to include("data-reactive-tags-remove-param=")
+        # the remove button wires the client tagsRemove action + the per-chip tag
+        # param (reactive_tags_remove helper, phlex-reactive 0.11.4 contract)
+        expect(output).to include("click->reactive#tagsRemove")
+        expect(output).to include('data-reactive-tag-param="Ruby"')
+        expect(output).to include('data-reactive-tag-param="Rails"')
+      end
+
+      it "renders a chip <template> whose remove button omits the tag param (client fills per clone)" do
+        template = output[%r{<template[^>]*>.*?</template>}m]
+        expect(template).to include("data-reactive-tag-text")
+        expect(template).to include("click->reactive#tagsRemove")
+        # the prototype's remove button carries the action but NO resolved tag —
+        # the client sets data-reactive-tag-param per cloned chip
+        expect(template).not_to include("data-reactive-tag-param=")
       end
     end
 
@@ -78,11 +90,19 @@ if defined?(Phlex::Reactive)
     end
 
     describe "suggestions" do
-      it "renders one option per suggestion with its add param" do
+      it "renders each suggestion as a role=option button wired to tagsPick with its tag param" do
         %w[Ruby Rails Hotwire Postgres].each do |tag|
           expect(output).to include(">#{tag}<")
         end
-        expect(output).to include("data-reactive-tags-option-param=")
+        # reactive_tags_option helper: role=option (so filter/listnav see it),
+        # forced type=button (never submits), the tagsPick action + tag param
+        expect(output).to include('role="option"')
+        expect(output).to include("click->reactive#tagsPick")
+        expect(output).to include('data-reactive-tag-param="Postgres"')
+      end
+
+      it "adds free text on Enter via the query input (tagsAdd mixed after listnav)" do
+        expect(output).to include("keydown.enter->reactive#tagsAdd")
       end
 
       context "when suggestions is a Hash of tag => haystack (synonyms the filter matches)" do
