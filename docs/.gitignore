@@ -4,6 +4,14 @@
 # belong in git's global ignore instead:
 # `$XDG_CONFIG_HOME/git/ignore` or `~/.config/git/ignore`
 
+# The gem's root .gitignore ignores Gemfile.lock (correct for a library gem). But
+# this is a real deployable app — commit its lock so the docs image installs the
+# exact gem versions we tested, not whatever resolves fresh at build time (a
+# newer transitive dependency with a breaking change can't silently break the
+# build). The Dockerfile installs frozen-off because the phlex-forms path gem's
+# git-ls-files digest floats across commits; every OTHER gem stays pinned.
+!Gemfile.lock
+
 # Ignore bundler config.
 /.bundle
 
