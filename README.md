@@ -192,10 +192,28 @@ Notes:
   (`root_classes`, `chip_classes`, `menu_classes`, …). The plain theme's twin
   (`Forms::Plain::TagField`) keeps the full client wire contract but ships zero
   styling classes; the invalid state rides `aria-invalid` on the query input.
-- **Inside a `live` form** the tag widget is a *nested* reactive root, so the
-  outer live-validation root skips its hidden field — live `validate` won't see
-  the tags value (validate tags on native submit instead). Fine for v1; tags
-  rarely need per-keystroke validation.
+- **Inside a `live` form**, declare `live_tags` so the outer form validates the
+  tags too. A standalone tag widget is a *nested* reactive root, so the live
+  root would skip its hidden field — `live_tags` lifts the widget's wire
+  attributes onto the `<form>` root and renders the widget rootless, so the form
+  owns the hidden field and `:validate` sees the value:
+
+  ```ruby
+  class PostForm < Forms::Base
+    live model: Post
+    live_tags :tags, suggestions: %w[Ruby Rails Hotwire]  # lift onto the form root
+
+    def fields
+      field :title
+      field :tags, as: :tags        # renders rootless; the form validates it
+      submit :primary
+    end
+  end
+  ```
+
+  phlex-reactive's tag controller reads **one** tag field per root, so a live
+  form lifts **at most one** — a second `live_tags` raises. A second tag input
+  must stay a standalone (non-live) `field :other, as: :tags`.
 
 ## Escape hatches & custom widgets
 
