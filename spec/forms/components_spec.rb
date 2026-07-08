@@ -3,8 +3,8 @@
 require "spec_helper"
 
 describe "Forms components" do
-  def render_form(model, **args, &block)
-    render_form_via(model, **args, &block)
+  def render_form(model, **args, &)
+    render_form_via(model, **args, &)
   end
 
   # Reuse the PhlexHelpers form renderer.
