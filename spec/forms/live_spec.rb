@@ -120,6 +120,21 @@ describe Forms::Live do
     end
   end
 
+  describe "authorization (phlex-reactive >= 0.11)" do
+    # phlex-reactive 0.11 defaults verify_authorized ON: a reactive action that
+    # completes without an authorization call raises AuthorizationNotVerified and
+    # rolls back (#168). :validate is intentionally a no-persist, read-only pass,
+    # so setup_live declares skip_verify_authorized :validate. Without it, the
+    # live round trip would 500 in a host app — and the endpoint isn't exercised
+    # here, so this class-level assertion is what guards against a silent regress.
+    it "skips verify_authorized for the :validate action" do
+      skip "phlex-reactive < 0.11 (no verify_authorized guard)" unless
+        form_class.respond_to?(:skip_verify_authorized?)
+
+      expect(form_class.skip_verify_authorized?(:validate)).to be(true)
+    end
+  end
+
   describe "guard rails" do
     it "raises on inline Form(live: true) pointing at Forms::Base" do
       expect { render_form(model_class.new, live: true) { |f| f.field(:email) } }

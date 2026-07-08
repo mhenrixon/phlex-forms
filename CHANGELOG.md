@@ -50,9 +50,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Minimum Ruby is now 3.4** (was 3.2). The optional `live` validation runs on
+  phlex-reactive, which has required Ruby >= 3.4 since its 0.9 line; aligning the
+  floor keeps the whole gem installable wherever the live integration is.
 - **`daisyui` is now a soft dependency** (removed from the gemspec). With it
   loaded nothing changes; without it the Plain theme is the default and the
   gem renders unstyled semantic HTML.
+- **Live validation is compatible with phlex-reactive >= 0.11's default-ON
+  `verify_authorized` (#168).** The `:validate` action declares
+  `skip_verify_authorized` — it's a no-persist, read-only validation pass, so it
+  needs no authorization call and won't raise `AuthorizationNotVerified`. No host
+  action required.
 - Model-driven inference changes rendered output for ActiveRecord-backed
   forms that previously fell through to a text input. Before/after:
 

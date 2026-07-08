@@ -48,6 +48,13 @@ module Forms
         @live_debounce = debounce
         reactive_state :model_gid, :touched
         action :validate, params: { scope.to_sym => :form_attributes, _touch: :string }
+        # phlex-reactive >= 0.11 defaults verify_authorized ON: an action that
+        # completes without an authorization call raises AuthorizationNotVerified
+        # and rolls back (#168). :validate is a deliberate no-persist, read-only
+        # pass — it assigns, validates, and discards; native submit stays
+        # authoritative — so it needs no authorization. Guarded so it's a no-op
+        # on older phlex-reactive that lacks the macro.
+        skip_verify_authorized :validate if respond_to?(:skip_verify_authorized)
       end
 
       def live_model_class = @live_model_class || inherited_live(:live_model_class)
