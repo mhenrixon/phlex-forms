@@ -81,6 +81,13 @@ describe "theming" do
     expect(output).not_to include('class="')
   end
 
+  it "maps the :tag_field role in both themes when phlex-reactive is present" do
+    skip "phlex-reactive not loaded" unless defined?(Phlex::Reactive)
+
+    expect(PhlexForms::Theme.daisy[:tag_field]).to eq(Forms::TagField)
+    expect(PhlexForms::Theme.plain[:tag_field]).to eq(Forms::Plain::TagField)
+  end
+
   it "supports single-role overrides via Theme#with" do
     custom_input = Class.new(Forms::Plain::Input) do
       def view_template

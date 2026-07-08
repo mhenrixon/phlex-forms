@@ -90,7 +90,7 @@ control wrapping the label, the input, and an error (or hint).
 | --- | --- |
 | `label:` | Label text. Defaults to the model's humanized attribute name. `label: false` omits it. |
 | `hint:` | Help text shown when there is no error. |
-| `as:` | Override the control: `:select`, `:textarea`, `:toggle`, `:checkbox`, `:file`, `:radio`, `:hidden`, `:rich_textarea`, or any text-like type. |
+| `as:` | Override the control: `:select`, `:textarea`, `:toggle`, `:checkbox`, `:file`, `:radio`, `:hidden`, `:rich_textarea`, `:tags` (see [Tag fields](#tag-fields)), or any text-like type. |
 | `required:` | Force the required flag. Otherwise inferred from the model's presence validators. |
 | `choices:` | Choices for a select (implies `as: :select`). |
 | positional modifiers | daisyui variants — `:primary`, `:lg`, `:ghost`, … — stacked onto the input. |
@@ -153,6 +153,49 @@ end
 ```
 
 Both work on inline forms (`f.row { … }`) and inside `fields_for` builders.
+
+### Tag fields
+
+`as: :tags` renders a polished tag/chip input — label + error/hint chrome and
+daisyUI styling on top of
+[phlex-reactive](https://github.com/mhenrixon/phlex-reactive)'s client-only tag
+primitives (form state, no server round trips). **Requires phlex-reactive** (the `:tags` role is
+registered only when it's loaded).
+
+```ruby
+f.field :tags, as: :tags, suggestions: %w[Ruby Rails Hotwire Postgres]
+
+# Hash form: the value is a "haystack" of synonyms the type-ahead filter matches
+f.field :tags, as: :tags, suggestions: { "Postgres" => "postgres database db sql" }
+```
+
+The widget submits **one comma-joined param** (`user[tags] = "Ruby,Rails"`) — the
+primitive's wire contract. The visible type-ahead input carries **no `name`**, so
+it never posts a stray param; only a hidden field does.
+
+Have the model split the comma-joined string back into an array:
+
+```ruby
+class Post < ApplicationRecord
+  attribute :tags, default: []            # a text[] / JSONB column, say
+
+  # accept the widget's "Ruby,Rails" and a normal Array alike
+  def tags=(value)
+    super(value.is_a?(String) ? value.split(",").map(&:strip).reject(&:empty?) : value)
+  end
+end
+```
+
+Notes:
+
+- **Custom styling** — the leaf reads daisyUI classes from overridable seams
+  (`root_classes`, `chip_classes`, `menu_classes`, …). The plain theme's twin
+  (`Forms::Plain::TagField`) keeps the full client wire contract but ships zero
+  styling classes; the invalid state rides `aria-invalid` on the query input.
+- **Inside a `live` form** the tag widget is a *nested* reactive root, so the
+  outer live-validation root skips its hidden field — live `validate` won't see
+  the tags value (validate tags on native submit instead). Fine for v1; tags
+  rarely need per-keystroke validation.
 
 ## Escape hatches & custom widgets
 

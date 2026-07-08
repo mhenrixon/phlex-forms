@@ -91,10 +91,13 @@ loader.ignore("#{__dir__}/phlex_forms/rubocop.rb") # cop entry point (RuboCop:: 
 loader.ignore("#{__dir__}/phlex_forms/engine.rb")
 
 # The live-validation layer includes Phlex::Reactive::Component at class level,
-# so it can only load when the phlex-reactive soft dependency is present.
+# and the tag_field leaf includes Phlex::Reactive::ClientBindings — both can only
+# load when the phlex-reactive soft dependency is present.
 unless defined?(Phlex::Reactive)
   loader.ignore("#{__dir__}/forms/live.rb")
   loader.ignore("#{__dir__}/forms/live")
+  loader.ignore("#{__dir__}/forms/tag_field.rb")
+  loader.ignore("#{__dir__}/forms/plain/tag_field.rb")
 end
 
 loader.setup
