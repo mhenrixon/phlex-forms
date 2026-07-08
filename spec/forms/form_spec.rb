@@ -104,6 +104,21 @@ describe Forms::Form do
   end
 
   describe "form element and model binding" do
+    it "exposes #object / #object_name for Rails form-builder compatibility" do
+      model = build_model(:user, email: "x@y.z")
+      form = described_class.new(model:, url: "/users")
+
+      expect(form.object).to be(model)
+      expect(form.object_name).to eq("user")
+    end
+
+    it "exposes f[:name] as a Forms::Field accessor" do
+      form = described_class.new(model: build_model(:user, email: "x@y.z"), url: "/users")
+
+      expect(form[:email]).to be_a(Forms::Field)
+      expect(form[:email].field_label).to eq("Email")
+    end
+
     it "derives scope, url, patch method and multipart for a persisted record" do
       persisted = build_model(:user, email: "x@y.z")
       def persisted.persisted? = true
