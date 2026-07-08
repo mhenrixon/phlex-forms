@@ -3,8 +3,8 @@
 require "spec_helper"
 
 describe PhlexForms::Inference do
-  def resolve(model, name, **kwargs)
-    described_class.resolve(model:, name:, **kwargs)
+  def resolve(model, name, **)
+    described_class.resolve(model:, name:, **)
   end
 
   # A stand-in for an ActiveRecord association/attachment reflection.

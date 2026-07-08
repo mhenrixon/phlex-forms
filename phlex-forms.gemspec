@@ -41,7 +41,7 @@ Gem::Specification.new do |s|
     "rubygems_mfa_required" => "true"
   }
 
-  s.required_ruby_version = ">= 3.2"
+  s.required_ruby_version = ">= 3.4"
 
   s.add_dependency "activesupport", ">= 7.0"
   s.add_dependency "glyphs", ">= 0.1.0"
