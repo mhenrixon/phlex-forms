@@ -32,9 +32,16 @@ module Forms
     end
 
     def view_template
+      # Build the options on `self` — the TimeZoneOptionsForSelect helper is
+      # included here, NOT on the yielded DaisyUI::Select (`el`), so calling it
+      # inside the block would raise NoMethodError.
+      # time_zone_options_for_select returns an HTML-safe buffer; Phlex's `safe`
+      # expects a plain String, so coerce with #to_s before marking it safe.
+      options_html = time_zone_options_for_select(@selected, @priority_zones, @zone_model).to_s
+
       render DaisyUI::Select.new(*daisy_modifiers, **select_attributes) do |el|
         render_placeholder(el) if @placeholder || @include_blank
-        el.raw(el.safe(time_zone_options_for_select(@selected, @priority_zones, @zone_model)))
+        el.raw(el.safe(options_html))
       end
     end
 
