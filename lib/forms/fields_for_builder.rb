@@ -8,6 +8,7 @@ module Forms
     include PhlexForms::Builder
 
     attr_reader :model, :scope, :errors, :parent_form
+    alias object model # Rails form-builder compatibility (mirrors Forms::Form)
 
     def initialize(model:, scope:, errors:, parent_form:)
       @model = model
@@ -24,6 +25,7 @@ module Forms
     def field_object(name, error_name: nil)
       Forms::Field.new(name:, model: @model, scope: @scope, errors: @errors, form: @parent_form, error_name:)
     end
+    alias [] field_object # `item_form[:id].hidden` — Rails form-builder-style access
 
     def default_field_variants
       @parent_form.default_field_variants

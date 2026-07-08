@@ -19,6 +19,12 @@ module Forms
 
     attr_reader :model, :scope, :url, :method, :errors, :validate, :theme
 
+    # Rails form-builder compatibility: `f.object` / `f.object_name` mirror the
+    # ActionView FormBuilder API so call sites that introspect the bound record
+    # (`f.object.class.reflect_on_association(...)`) keep working.
+    alias object model
+    alias object_name scope
+
     def initialize(*modifiers, model: nil, scope: nil, url: nil, method: nil, validate: false,
                    field_variants: nil, theme: nil, live: nil, **options)
       if live
@@ -66,6 +72,7 @@ module Forms
     def field_object(name, error_name: nil)
       Forms::Field.new(name:, model: @model, scope: @scope, errors: @errors, form: self, error_name:)
     end
+    alias [] field_object # `f[:email].hidden` — Rails form-builder-style access
 
     def submit(*, **, &)
       render theme[:submit].new(*, model: @model, **, &)
