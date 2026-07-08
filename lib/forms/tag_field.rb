@@ -40,35 +40,48 @@ module Forms
     end
 
     def view_template
-      div(**mix(
-        reactive_root(id: "#{@id}_widget"),
-        # Raw wire attrs, not reactive_tags(:tags)/reactive_filter(:q) (Caveats 1 & 2):
-        # target the hidden field by [name=…] and the query input by #id (an id
-        # selector means the query input never submits a stray param).
-        { data: {
-          reactive_tags_field: %([name="#{@name}"]),
-          reactive_filter_input: "##{@id}_query"
-        } },
-        class: root_classes
-      )) do
-        input(type: :hidden, name: @name, id: @id, value: @value)
-
-        div(class: list_classes, data: { reactive_tags_list: true }) do
-          current_tags.each { |tag| chip(tag) } # server-rendered first paint
-        end
-        template(data: { reactive_tags_template: true }) { chip }
-
-        # Enter adds free text; mix AFTER reactive_listnav so Enter prefers a
-        # highlighted option. NO name → never submits.
-        input(**mix(reactive_listnav, reactive_tags_add, query_attributes))
-
-        ul(class: menu_classes) do
-          @suggestions.each { |tag, haystack| suggestion(tag, haystack) }
-        end
+      # Standalone: THIS div is the reactive root. Inside a Forms::Live form the
+      # widget renders rootless (Forms::RootlessTagField) — the outer <form> is
+      # the root and carries these tag attrs — so the form owns the hidden field.
+      div(**mix(reactive_root(id: "#{@id}_widget"), root_tag_attributes, class: root_classes)) do
+        body
       end
     end
 
+    # The root's tag wire attrs. Raw, not reactive_tags(:tags)/reactive_filter(:q)
+    # (Caveats 1 & 2): target the hidden field by [name=…] and the query input by
+    # #id (an id selector means the query input never submits a stray param).
+    # Public so Forms::Live can hoist these onto the <form> root when the widget
+    # is lifted rootless.
+    def self.root_tag_attributes(name:, id:)
+      { data: {
+        reactive_tags_field: %([name="#{name}"]),
+        reactive_filter_input: "##{id}_query"
+      } }
+    end
+
     private
+
+    def root_tag_attributes = self.class.root_tag_attributes(name: @name, id: @id)
+
+    # The widget body WITHOUT its root wrapper — shared with the rootless variant
+    # so chip/template/suggestion markup never drifts between the two.
+    def body
+      input(type: :hidden, name: @name, id: @id, value: @value)
+
+      div(class: list_classes, data: { reactive_tags_list: true }) do
+        current_tags.each { |tag| chip(tag) } # server-rendered first paint
+      end
+      template(data: { reactive_tags_template: true }) { chip }
+
+      # Enter adds free text; mix AFTER reactive_listnav so Enter prefers a
+      # highlighted option. NO name → never submits.
+      input(**mix(reactive_listnav, reactive_tags_add, query_attributes))
+
+      ul(class: menu_classes) do
+        @suggestions.each { |tag, haystack| suggestion(tag, haystack) }
+      end
+    end
 
     def normalize_suggestions(suggestions)
       return suggestions if suggestions.is_a?(Hash)

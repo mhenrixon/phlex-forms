@@ -98,6 +98,8 @@ unless defined?(Phlex::Reactive)
   loader.ignore("#{__dir__}/forms/live")
   loader.ignore("#{__dir__}/forms/tag_field.rb")
   loader.ignore("#{__dir__}/forms/plain/tag_field.rb")
+  loader.ignore("#{__dir__}/forms/rootless_tag_field.rb")
+  loader.ignore("#{__dir__}/forms/plain/rootless_tag_field.rb")
 end
 
 loader.setup

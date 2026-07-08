@@ -67,8 +67,38 @@ module Forms
       def live_permit(*attrs) = @live_permit = attrs.map(&:to_s)
       def live_deny(*attrs)   = @live_deny = attrs.map(&:to_s)
 
+      # Lift a tag field onto the form's reactive root so live :validate sees its
+      # comma-joined value. The widget renders ROOTLESS (no nested reactive root),
+      # so the outer <form> DOM-owns the hidden tags field; its wire attrs ride on
+      # the form root (see #form_attributes). The declared tag name is
+      # auto-permitted for :validate assignment.
+      #
+      #   class PostForm < Forms::Base
+      #     live model: Post
+      #     live_tags :tags, suggestions: %w[Ruby Rails]
+      #     def fields = field(:tags, as: :tags)
+      #   end
+      #
+      # phlex-reactive's tag controller reads ONE data-reactive-tags-field per
+      # root, so a live form lifts AT MOST ONE tag field — a second raises.
+      def live_tags(name, suggestions: [])
+        if @live_tags
+          raise ArgumentError,
+            "a live form can lift at most one tag field onto its reactive root " \
+            "(already declared live_tags #{@live_tags[:name].inspect}); render the " \
+            "second as a standalone `field #{name.inspect}, as: :tags` (it stays " \
+            "non-live)."
+        end
+
+        @live_tags = { name: name.to_sym, suggestions: }
+      end
+
+      def live_tags_declaration = @live_tags || inherited_live(:live_tags_declaration)
+
       def live_permitted_attributes(model)
         permitted = @live_permit || derived_live_attributes(model)
+        tag = live_tags_declaration
+        permitted |= [tag[:name].to_s] if tag
         permitted - (@live_deny || [])
       end
 
@@ -129,11 +159,19 @@ module Forms
     # per-element).
     def form_attributes
       attrs = super
-      mix(
+      attrs = mix(
         attrs,
         reactive_root(id: attrs[:id] || id),
         on(:validate, event: "input", debounce: self.class.live_debounce)
       )
+      # Hoist a declared tag field's wire attrs onto the form root so the rootless
+      # widget (rendered in the block) is driven by this root, which then DOM-owns
+      # its hidden field. Name/id derived through field_name/field_id — the same
+      # path the rootless render uses, so the [name=…]/#…_query selectors match.
+      tag = self.class.live_tags_declaration
+      return attrs unless tag
+
+      mix(attrs, Forms::TagField.root_tag_attributes(name: field_name(tag[:name]), id: field_id(tag[:name])))
     end
 
     # Untouched fields get no error set, so nothing flashes before the user
