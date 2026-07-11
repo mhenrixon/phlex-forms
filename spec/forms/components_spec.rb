@@ -65,6 +65,41 @@ describe "Forms components" do
     end
   end
 
+  describe "hidden_field (Rails FormBuilder migration aid)" do
+    it "renders a scoped hidden input with an explicit value: override" do
+      user = build_model(:user, name: "Ada")
+
+      output = render_form(user) do |f|
+        f.hidden_field(:accepted_terms_document_id, value: 42)
+      end
+
+      expect(output).to include('type="hidden"')
+      expect(output).to include('name="user[accepted_terms_document_id]"')
+      expect(output).to include('id="user_accepted_terms_document_id"')
+      expect(output).to include('value="42"')
+    end
+
+    it "binds the value from the model when none is passed" do
+      user = build_model(:user, token: "abc123")
+
+      output = render_form(user) { |f| f.hidden_field(:token) }
+
+      expect(output).to include('type="hidden"')
+      expect(output).to include('name="user[token]"')
+      expect(output).to include('value="abc123"')
+    end
+
+    it "renders under the plain theme too (bare hidden input)" do
+      user = build_model(:user, token: "abc123")
+
+      output = render_form(user, theme: :plain) { |f| f.hidden_field(:token) }
+
+      expect(output).to include('<input type="hidden"')
+      expect(output).to include('name="user[token]"')
+      expect(output).to include('value="abc123"')
+    end
+  end
+
   describe "fields_for (has_many nested attributes)" do
     it "renders indexed nested attribute names" do
       child = Class.new do

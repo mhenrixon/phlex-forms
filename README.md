@@ -227,6 +227,11 @@ f.Checkbox(:terms) ; f.Toggle(:notify) ; f.FileInput(:avatar)
 f.Label(:email) ; f.Hidden(:token) ; f.submit("Save", :primary)
 ```
 
+Migrating from Rails' `FormBuilder`? `f.hidden_field(:token, value: x)` is a
+snake_case alias for `f.Hidden` — same model-bound path, and an explicit
+`value:` wins over the model's current value — so those call sites port over
+verbatim.
+
 For a bespoke widget (date picker, tag field, remote select), wrap it in
 `f.Control` and bind through the public helpers — this is the supported path,
 not a fork reason:
