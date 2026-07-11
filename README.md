@@ -366,9 +366,11 @@ f.checkbox_group(:tag_ids, Tag.all, value: :id, label: :name)
 f.checkbox_group(:tag_ids, Tag.all, value: :id,
   label: ->(t) { t.name.presence || t.slug }, # Symbol method or Proc
   variant: :pill,                             # :stack (default) | :inline | :pill
-  size: :sm)                                  # daisyUI checkbox size
-# ...or through field inference:
-f.field :tag_ids, as: :checkbox_group, collection: Tag.all, value: :id, label: :name
+  size: :sm,                                  # daisyUI checkbox size
+  aria: { label: "Tags" })                    # names the group for screen readers
+# ...or through field inference (the field's label/hint name the group):
+f.field :tag_ids, as: :checkbox_group, collection: Tag.all, value: :id,
+  label: "Tags", hint: "Pick any"
 
 f.collection_select(:country_id, Country.all, :id, :name, prompt: "Select…")
 ```
@@ -378,6 +380,20 @@ empty-array hidden field, so deselecting everything still submits. The checked
 set comes from the model's current value matched by each item's resolved
 `value:` — re-rendering an edit form pre-checks the right boxes. The `:pill`
 variant styles the active chip with Tailwind's `has-[:checked]:` (no JS).
+
+A `role="group"` needs an **accessible name** for assistive tech. The verb has
+no bespoke naming option — HTML/ARIA attributes pass straight through to the
+group, so name it with plain `aria:` (`aria: { label: "Tags" }` for a literal
+name, or `aria: { labelledby: "some_id" }` to point at an existing element).
+Through `f.field`, the Control's own visible `label:` / `hint:` name the group
+automatically (the field wires `aria-labelledby` / `aria-describedby` at them).
+Without a name the group renders as before — naming is the caller's call, the
+same posture as Rails' derived form markup.
+
+Field ids derive from scope + name (+ value for group items), exactly like
+Rails' `form_with`; the gem does not guarantee page-wide id uniqueness across
+multiple forms for the same model — scope one form (`Form(model:, scope: …)`) to
+disambiguate, as you would in Rails.
 
 `Form(model: @item, scope: false)` emits **bare** field names
 (`name="quantity"`) — the shape phlex-reactive row editors and

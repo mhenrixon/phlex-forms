@@ -81,9 +81,37 @@ module PhlexForms
       options = fo.apply_validations(options)
       choices ||= materialize_choices(inferred.choices)
 
-      render fo.control(label: label_text, hint:, required: req) do
+      # A checkbox_group renders div[role="group"], which a plain <label for> can't
+      # name. Give the Control's label/hint stable ids (control_opts) and point the
+      # group at them with a passed-through aria: { labelledby:, describedby: }
+      # (group_opts), reusing the Control's own visible chrome (issue #17).
+      control_opts, group_opts = group_aria(fo, inferred.as, label_text, hint)
+      options = options.merge(group_opts)
+
+      render fo.control(label: label_text, hint:, required: req, **control_opts) do
         render_field_input(fo, inferred.name, inferred.as, modifiers, choices:, required: req, **options)
       end
+    end
+
+    # For a checkbox_group field: the stable ids to stamp on the Control's
+    # label/hint (control_opts), and a group `aria:` hash pointing back at them
+    # (group_opts) — passed through to the group div, no special leaf API. Returns
+    # [{}, {}] for every other field type (a label associates via for/id, no aria
+    # needed) and when neither label nor hint is present.
+    def group_aria(fo, as, label_text, hint)
+      return [{}, {}] unless as == :checkbox_group
+
+      control_opts = {}
+      aria = {}
+      if label_text
+        control_opts[:label_id] = "#{fo.field_id}_label"
+        aria[:labelledby] = control_opts[:label_id]
+      end
+      if hint
+        control_opts[:hint_id] = "#{fo.field_id}_hint"
+        aria[:describedby] = control_opts[:hint_id]
+      end
+      [control_opts, aria.empty? ? {} : { aria: }]
     end
 
     # ------------------------------------------------------------------

@@ -111,4 +111,118 @@ describe "checkbox_group (issue #9)" do
       expect(PhlexForms::Theme.plain[:checkbox_group]).to eq(Forms::Plain::CheckboxGroup)
     end
   end
+
+  # Issue #17: role="group" needs an accessible name (and optional description)
+  # so assistive tech announces the group's purpose when focus enters a checkbox.
+  describe "accessible name (issue #17)" do
+    describe "the bare verb" do
+      # No bespoke naming API — HTML/ARIA attributes pass straight through to the
+      # group div, so the caller names it with plain aria: {}.
+      it "names the group via a passed-through aria: { label: }" do
+        output = render_form(user) do |f|
+          f.checkbox_group(:tag_ids, collection, value: :id, label: :name, aria: { label: "Tags" })
+        end
+
+        expect(output).to match(/role="group"[^>]*aria-label="Tags"/)
+      end
+
+      it "names the group via a passed-through aria: { labelledby: } id" do
+        output = render_form(user) do |f|
+          f.checkbox_group(:tag_ids, collection, value: :id, label: :name,
+            aria: { labelledby: "external_heading", describedby: "external_hint" })
+        end
+
+        expect(output).to match(/role="group"[^>]*aria-labelledby="external_heading"/)
+        expect(output).to include('aria-describedby="external_hint"')
+      end
+
+      it "passes arbitrary attributes (data:) through to the group" do
+        output = render_form(user) do |f|
+          f.checkbox_group(:tag_ids, collection, value: :id, label: :name,
+            data: { controller: "chips" })
+        end
+
+        expect(output).to match(/role="group"[^>]*data-controller="chips"/)
+      end
+
+      it "escapes the attribute delimiter in a passed-through aria-label (no breakout)" do
+        # Phlex escapes the quote delimiter (&quot;) so a value can't break out of
+        # the attribute; < / > are inert inside a quoted attribute value, so the
+        # <script> text stays trapped as an attribute value, never a new element.
+        output = render_form(user) do |f|
+          f.checkbox_group(:tag_ids, collection, value: :id, label: :name,
+            aria: { label: '"><script>x' })
+        end
+
+        expect(output).to include('aria-label="&quot;><script>x"')
+        # The dangerous form — an unescaped quote that closes the attribute and
+        # opens a real <script> element — must NOT appear.
+        expect(output).not_to include('aria-label=""><script>x')
+      end
+
+      it "emits only role + aria-invalid on the group when no aria given" do
+        # Backward compatible with the #9 output (no accessible name is the
+        # caller's responsibility — same posture as Rails' derived markup).
+        output = render_form(user) do |f|
+          f.checkbox_group(:tag_ids, collection, value: :id, label: :name)
+        end
+
+        expect(output).not_to include("aria-label")
+        expect(output).not_to include("aria-labelledby")
+        expect(output).not_to include("aria-describedby")
+      end
+    end
+
+    describe "the f.field(as: :checkbox_group) path" do
+      it "names the group via the Control's own label (no duplicate heading)" do
+        output = render_form(user) do |f|
+          f.field(:tag_ids, as: :checkbox_group, collection:, value: :id, label: "Tags")
+        end
+
+        # The Control's <label> carries a stable id...
+        expect(output).to include('<label for="user_tag_ids" id="user_tag_ids_label">')
+        expect(output).to include(">Tags</span>")
+        # ...and the group points aria-labelledby at it.
+        expect(output).to match(/role="group"[^>]*aria-labelledby="user_tag_ids_label"/)
+        # Exactly one "Tags" text node — no duplicate heading inside the group.
+        expect(output.scan(">Tags<").size).to eq(1)
+      end
+
+      it "describes the group via the Control's hint" do
+        output = render_form(user) do |f|
+          f.field(:tag_ids, as: :checkbox_group, collection:, value: :id,
+            label: "Tags", hint: "Pick any")
+        end
+
+        expect(output).to match(/id="user_tag_ids_hint"[^>]*>Pick any/)
+        expect(output).to match(/role="group"[^>]*aria-describedby="user_tag_ids_hint"/)
+      end
+    end
+
+    describe "theme parity" do
+      it "passes aria through under the plain theme with zero styling classes" do
+        output = render_form(user, theme: :plain) do |f|
+          f.checkbox_group(:tag_ids, collection, value: :id, label: :name,
+            aria: { label: "Tags" })
+        end
+
+        expect(output).to match(/role="group"[^>]*aria-label="Tags"/)
+        expect(output).not_to include('class="')
+      end
+
+      it "the plain f.field path stamps the Control's label/hint ids (no dangling aria)" do
+        # The plain Control overrides view_template; it must thread label_id/hint_id
+        # the same way, or the group's aria-* would point at ids that don't exist.
+        output = render_form(user, theme: :plain) do |f|
+          f.field(:tag_ids, as: :checkbox_group, collection:, value: :id,
+            label: "Tags", hint: "Pick any")
+        end
+
+        expect(output).to include('id="user_tag_ids_label"')
+        expect(output).to include('id="user_tag_ids_hint"')
+        expect(output).to match(/role="group"[^>]*aria-labelledby="user_tag_ids_label"/)
+        expect(output).to include('aria-describedby="user_tag_ids_hint"')
+      end
+    end
+  end
 end
