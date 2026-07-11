@@ -10,7 +10,7 @@ import { Controller } from "@hotwired/stimulus"
 // reads from data attributes; the base class only knows about the
 // `allowBlank` / `allowNil` short-circuits.
 export class FieldValidatorController extends Controller {
-  // `error` is opt-in: callers that pre-render a `<p data-forms--validations--error-target="error">`
+  // `error` is opt-in: callers that pre-render a `<p data-validations--<validator>-target="error">`
   // get a stable slot the controller toggles. Inputs without an
   // explicit target still work — the controller lazily creates one
   // adjacent to the input below.
@@ -24,12 +24,12 @@ export class FieldValidatorController extends Controller {
   // directly to <input>, <textarea>, <select> via the form builder.
   connect() {
     this.element.addEventListener("blur", this.onBlur)
-    this.element.addEventListener("invalidate:forms--validations", this.onValidate)
+    this.element.addEventListener("invalidate:validations", this.onValidate)
   }
 
   disconnect() {
     this.element.removeEventListener("blur", this.onBlur)
-    this.element.removeEventListener("invalidate:forms--validations", this.onValidate)
+    this.element.removeEventListener("invalidate:validations", this.onValidate)
   }
 
   onBlur = () => {
@@ -150,7 +150,7 @@ export class FieldValidatorController extends Controller {
     // adjacent to the input. Keeps the framework usable on plain
     // forms that haven't opted into the static-target convention.
     const id = this.element.id || this.element.name
-    const selector = `[data-forms--validations--error="${id}"]`
+    const selector = `[data-validations--error="${id}"]`
     const existing = this.element.closest("form")?.querySelector(selector)
     if (existing) return existing
     if (!create) return null
@@ -159,7 +159,7 @@ export class FieldValidatorController extends Controller {
     container.className = "text-error text-sm mt-1"
     // `dataset` rejects keys with `--`, so we set the attribute
     // directly. The CSS selector still matches.
-    container.setAttribute("data-forms--validations--error", id)
+    container.setAttribute("data-validations--error", id)
     this.element.insertAdjacentElement("afterend", container)
     return container
   }

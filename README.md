@@ -337,6 +337,11 @@ import { lazyLoadControllersFrom } from "@hotwired/stimulus-loading"
 lazyLoadControllersFrom("phlex_forms/controllers", application)
 ```
 
+The emitted identifiers are `validations--presence`, `validations--length`, … (and
+the form-level `validations--form` coordinator), which `lazyLoadControllersFrom`
+resolves to `phlex_forms/controllers/validations/*_controller` — the path the gem
+ships them at.
+
 Messages ship for `en` / `fr` / `af`; override via `window.PhlexForms.messages`.
 
 ## Nested attributes, collections & escape valves

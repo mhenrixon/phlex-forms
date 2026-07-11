@@ -210,13 +210,15 @@ module Forms
     # UI (novalidate) — the Stimulus layer owns error display.
     def apply_validation_coordinator(attrs)
       existing = attrs[:data][:controller].to_s
-      coordinator = "forms--validations--form"
+      # Derive the coordinator identifier from the introspector's prefix so the
+      # form-level and field-level controllers can never drift (issue #12).
+      coordinator = "#{Forms::Validations::Introspector::CONTROLLER_PREFIX}--form"
       attrs[:data][:controller] = [existing, coordinator].reject(&:empty?).join(" ")
       # Wire the coordinator's submit handler. Without this data-action the
       # controller connects but onSubmit never fires, so an invalid form is not
       # blocked client-side (issue #11). Joined with any caller-supplied action.
       existing_action = attrs[:data][:action].to_s
-      submit_action = "submit->forms--validations--form#onSubmit"
+      submit_action = "submit->#{coordinator}#onSubmit"
       attrs[:data][:action] = [existing_action, submit_action].reject(&:empty?).join(" ")
       attrs[:novalidate] = true
     end

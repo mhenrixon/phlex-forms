@@ -12,7 +12,7 @@ export default class extends FieldValidatorController {
   // Stimulus walks the prototype chain to accumulate `static values`
   // and `static targets`, so we only declare the validator-specific
   // ones here. `counter` is opt-in: callers that pre-render
-  // `<span data-forms--validations--length-target="counter">` get a
+  // `<span data-validations--length-target="counter">` get a
   // stable slot the controller updates. Inputs without an explicit
   // target still get a lazily-injected one (see counterElement).
   static targets = ["counter"]
@@ -80,7 +80,7 @@ export default class extends FieldValidatorController {
 
     // Fallback: cache-by-id lookup or lazy injection for plain forms.
     const id = this.element.id || this.element.name
-    const selector = `[data-forms--validations--counter="${id}"]`
+    const selector = `[data-validations--counter="${id}"]`
     const existing = this.element.closest("form")?.querySelector(selector)
     if (existing) return existing
     if (!create) return null
@@ -88,7 +88,7 @@ export default class extends FieldValidatorController {
     const counter = document.createElement("span")
     counter.className = "text-xs text-base-content/60 ml-auto"
     // `dataset` rejects keys containing `--`; use the raw attribute API.
-    counter.setAttribute("data-forms--validations--counter", id)
+    counter.setAttribute("data-validations--counter", id)
     this.element.insertAdjacentElement("afterend", counter)
     return counter
   }

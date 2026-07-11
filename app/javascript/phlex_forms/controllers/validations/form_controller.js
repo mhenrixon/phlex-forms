@@ -3,7 +3,7 @@ import { Controller } from "@hotwired/stimulus"
 // Form-level coordinator for the validation framework. Sits on the
 // <form> element and intercepts `submit` to broadcast a synchronous
 // validation event to every field. Each field controller listens
-// for `invalidate:forms--validations`, runs its check, and (on
+// for `invalidate:validations`, runs its check, and (on
 // failure) appends its error to the event's `detail.errors` array.
 // If anything ended up in that array, we cancel the submit and
 // focus the first invalid field.
@@ -23,11 +23,11 @@ export default class extends Controller {
     fields.forEach((field) => {
       const validators = (field.dataset.controller || "")
         .split(/\s+/)
-        .filter((c) => c.startsWith("forms--validations--") && c !== "forms--validations--form")
+        .filter((c) => c.startsWith("validations--") && c !== "validations--form")
       if (validators.length === 0) return
 
       field.dispatchEvent(
-        new CustomEvent("invalidate:forms--validations", {
+        new CustomEvent("invalidate:validations", {
           detail: { errors },
         }),
       )

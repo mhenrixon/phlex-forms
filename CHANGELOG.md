@@ -17,12 +17,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   derives the checked set from the model's current value, and renders under both
   themes. `variant:` (`:stack`/`:inline`/`:pill`) is layout-only, no JS.
 
+### Changed
+
+- **Client-side validation Stimulus identifiers dropped the `forms--` prefix**:
+  the bundled controllers now emit `validations--presence`, `validations--length`,
+  … (and the `validations--form` coordinator) so
+  `lazyLoadControllersFrom("phlex_forms/controllers")` resolves them to their
+  shipped path `phlex_forms/controllers/validations/*_controller` — previously
+  `forms--validations--*` derived `.../forms/validations/*`, which 404'd and the
+  controllers never connected (issue #12). The `data-validations--*` binding
+  attributes and the `invalidate:validations` event changed to match. Hosts that
+  registered `forms--validations--*` explicitly must update the identifier.
+
 ### Fixed
 
+- **`f.Radio` / `Field#radio` rendered the model's current value on every radio
+  instead of each radio's own value**: `field_attributes` carried `value:
+  field_value` and was splatted after the explicit positional value, clobbering
+  it — a new record lost the value entirely, an edit form gave every radio the
+  same value. `radio` now drops `field_attributes`' `value` (issue #13).
 - **`Form(validate: true)` never fired client-side validation on submit**: the
   coordinator controller was attached but no `data-action` wired its `onSubmit`
   handler, so submitting an invalid form was not blocked. `apply_validation_coordinator`
-  now emits `submit->forms--validations--form#onSubmit` (joined with any
+  now emits `submit->validations--form#onSubmit` (joined with any
   caller-supplied `data-action`).
 - **`fields_for` iterated a Hash-backed association (JSONB), emitting bogus
   indices**: a Hash responds to `#each_with_index`, so a JSONB column rendered
