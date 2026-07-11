@@ -13,7 +13,11 @@ module Forms
     # validation remains authoritative — the client side just
     # shortens the loop for the common cases.
     class Introspector
-      CONTROLLER_PREFIX = "forms--validations"
+      # The Stimulus identifier prefix. Kept in sync with the file path the
+      # controllers ship at (phlex_forms/controllers/validations/*_controller),
+      # so lazyLoadControllersFrom("phlex_forms/controllers") resolves
+      # `validations--length` → .../validations/length_controller (issue #12).
+      CONTROLLER_PREFIX = "validations"
 
       # Validators we know how to mirror. Keys are the short class
       # name (without namespace), values are the controller suffix
@@ -59,9 +63,9 @@ module Forms
 
       # Returns a hash of the shape:
       #   {
-      #     controller: "forms--validations--presence forms--validations--length",
-      #     forms__validations__presence_required_value: "true",
-      #     forms__validations__length_maximum_value: "60",
+      #     controller: "validations--presence validations--length",
+      #     validations__presence_required_value: "true",
+      #     validations__length_maximum_value: "60",
       #   }
       #
       # Returns {} when no supported validators are present.
@@ -95,7 +99,7 @@ module Forms
 
       # Phlex turns underscores in `data:` hash keys into hyphens
       # in the rendered HTML. To produce a key like
-      # `data-forms--validations--length-maximum-value` from a
+      # `data-validations--length-maximum-value` from a
       # Ruby symbol we need every "-" represented as "__" in the
       # symbol. That's what this method builds.
       def data_key(suffix, key)

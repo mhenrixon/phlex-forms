@@ -20,7 +20,7 @@ class Views::Docs::Pages::ClientValidation < DocsUI::Page
     DocsUI::Section("Turning it on") do
       md <<~'MD'
         `validate: true` introspects the model's validators and emits
-        `data-forms--validations--*` bindings per field, plus a form-level
+        `data-validations--*` bindings per field, plus a form-level
         submit coordinator. The form gets `novalidate` — the shipped Stimulus
         controllers own error display, so you never see the inconsistent native
         browser bubbles.

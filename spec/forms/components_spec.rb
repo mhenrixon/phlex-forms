@@ -27,6 +27,44 @@ describe "Forms components" do
     end
   end
 
+  describe "Radio (issue #13)" do
+    it "keeps each radio's own value instead of the model's current value" do
+      # field_attributes carries value: field_value; splatted after the explicit
+      # radio value it used to clobber it, so every radio submitted the model's
+      # value (or, for a new record, nothing).
+      user = build_model(:user, role: nil)
+
+      output = render_form(user) do |f|
+        f.Radio(:role, "manager")
+        f.Radio(:role, "member")
+      end
+
+      expect(output).to include('value="manager"')
+      expect(output).to include('value="member"')
+      expect(output).to include('name="user[role]"')
+    end
+
+    it "checks the radio whose value matches the model, not all of them" do
+      user = build_model(:user, role: "manager")
+
+      output = render_form(user) do |f|
+        f.Radio(:role, "manager")
+        f.Radio(:role, "member")
+      end
+
+      expect(output).to match(/value="manager"[^>]*checked/)
+      expect(output).not_to match(/value="member"[^>]*checked/)
+    end
+
+    it "still lets an explicit value: option win" do
+      user = build_model(:user, role: nil)
+
+      output = render_form(user) { |f| f.Radio(:role, "manager", value: "override") }
+
+      expect(output).to include('value="override"')
+    end
+  end
+
   describe "fields_for (has_many nested attributes)" do
     it "renders indexed nested attribute names" do
       child = Class.new do
@@ -75,31 +113,31 @@ describe "Forms components" do
     it "attaches the coordinator + novalidate when validate: true" do
       output = render_form(partner, validate: true, &:submit)
       expect(output).to include("novalidate")
-      expect(output).to include("forms--validations--form")
+      expect(output).to include("validations--form")
     end
 
     it "wires the submit handler via a data-action (issue #11)" do
       # Without this, the coordinator connects but onSubmit is never invoked, so
       # submitting an invalid form is not blocked client-side.
       output = render_form(partner, validate: true, &:submit)
-      expect(output).to include("submit->forms--validations--form#onSubmit")
+      expect(output).to include("submit->validations--form#onSubmit")
     end
 
     it "preserves a caller-supplied data-action alongside the coordinator action" do
       output = render_form(partner, validate: true, data: { action: "click->thing#go" }, &:submit)
       expect(output).to include("click->thing#go")
-      expect(output).to include("submit->forms--validations--form#onSubmit")
+      expect(output).to include("submit->validations--form#onSubmit")
     end
 
     it "wires per-field validator controllers from the model" do
       output = render_form(partner, validate: true) { |f| f.field(:title) }
-      expect(output).to include("forms--validations--presence forms--validations--length")
-      expect(output).to include('data-forms--validations--length-maximum-value="60"')
+      expect(output).to include("validations--presence validations--length")
+      expect(output).to include('data-validations--length-maximum-value="60"')
     end
 
     it "opts a field out with validate: false" do
       output = render_form(partner, validate: true) { |f| f.field(:title, validate: false) }
-      expect(output).not_to include("forms--validations--presence")
+      expect(output).not_to include("validations--presence")
     end
   end
 end
