@@ -12,7 +12,7 @@ module Forms
     def view_template
       return unless @text
 
-      p(class: classes) { @text }
+      p(class: classes, **@options.except(:class)) { @text }
     end
 
     private

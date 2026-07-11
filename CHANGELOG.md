@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Shares one array-valued field name with a leading empty-array hidden field,
   derives the checked set from the model's current value, and renders under both
   themes. `variant:` (`:stack`/`:inline`/`:pill`) is layout-only, no JS.
+- **`checkbox_group` accessible name** (issue #17): the `div[role="group"]` can
+  now carry an accessible name/description. HTML/ARIA attributes pass straight
+  through to the group, so the bare verb is named with plain `aria:`
+  (`aria: { label: "Tags" }` or `aria: { labelledby: "id" }`); through `f.field`
+  the Control's own visible `label:` / `hint:` get stable ids and the field wires
+  `aria-labelledby` / `aria-describedby` at them (no duplicate markup). Absent a
+  name, output is unchanged.
 
 ### Changed
 

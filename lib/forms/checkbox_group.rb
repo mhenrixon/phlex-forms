@@ -15,6 +15,18 @@ module Forms
   # variant: :stack (default) | :inline | :pill — layout only, zero JS
   # size:    daisyUI checkbox size modifier (:xs :sm :md :lg :xl)
   #
+  # Accessible name (issue #17): `role="group"` needs one so a screen reader
+  # announces the group when focus enters a checkbox. The leaf does NOT invent
+  # its own naming API — extra attributes pass straight through to the group
+  # `div`, so the caller names it with plain HTML/ARIA:
+  #
+  #   f.checkbox_group(:tag_ids, Tag.all, value: :id, aria: { label: "Tags" })
+  #   f.checkbox_group(:tag_ids, Tag.all, value: :id, aria: { labelledby: "hdr" })
+  #
+  # Through `f.field`, the builder points the group at the Control's own visible
+  # <label>/hint via `aria: { labelledby:, describedby: }` (so the accessible
+  # name matches what sighted users see) — same passthrough, no special API.
+  #
   # The checked set is passed in pre-resolved by the builder (Field#checkbox_group
   # matches the model's current value by each item's resolved value:), so the
   # component itself stays presentation-only. Each checkbox's markup is delegated
@@ -44,7 +56,11 @@ module Forms
       # convention as collection_check_boxes).
       input(type: "hidden", name: @name, value: "")
 
-      div(class: group_classes, role: "group", "aria-invalid": @error || nil) do
+      # class is the per-checkbox styling seam (see render_checkbox), not a group
+      # attribute — everything else the caller passed lands on the group so aria:,
+      # data:, id: etc. pass straight through.
+      div(class: group_classes, role: "group", "aria-invalid": @error || nil,
+        **@attributes.except(:class)) do
         @options.each { |option| item(option) }
       end
     end
