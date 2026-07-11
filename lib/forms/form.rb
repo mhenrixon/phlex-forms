@@ -104,7 +104,7 @@ module Forms
       attributes_key = nested_attributes ? "#{association_name}_attributes" : association_name.to_s
       base_scope = @scope ? "#{@scope}[#{attributes_key}]" : attributes_key
 
-      if associated.respond_to?(:each_with_index)
+      if collection?(associated)
         associated.each_with_index do |item, index|
           yield build_fields_for("#{base_scope}[#{index}]", item)
         end
@@ -133,6 +133,13 @@ module Forms
       end
     end
 
+    # A batched checkbox group for an array-valued field (issue #9). Delegates to
+    # Field#checkbox_group, which derives the checked set from the model.
+    #   f.checkbox_group(:tag_ids, Tag.all, value: :id, label: :name, variant: :pill)
+    def checkbox_group(name, collection, **)
+      render field_object(name).checkbox_group(collection, **)
+    end
+
     # Rails-style collection_select over an enumerable of records.
     def collection_select(name, collection, value_method, text_method, options = {}, html_options = {})
       choices = collection.map do |item|
@@ -155,6 +162,15 @@ module Forms
     def field_value(name) = field_object(name).field_value
 
     private
+
+    # A genuine has_many collection (Array / ActiveRecord::Relation), NOT a
+    # Hash-backed nested scope. A Hash responds to #each_with_index but is a
+    # single nested record (a JSONB column), so iterating it would emit bogus
+    # positional indices — scope[assoc][0][field] — instead of scope[assoc][field]
+    # (issue #10). Enumerable-but-not-Hash covers Relations without requiring AR.
+    def collection?(associated)
+      associated.is_a?(Enumerable) && !associated.is_a?(Hash)
+    end
 
     def build_fields_for(scope, item)
       Forms::FieldsForBuilder.new(
@@ -196,6 +212,12 @@ module Forms
       existing = attrs[:data][:controller].to_s
       coordinator = "forms--validations--form"
       attrs[:data][:controller] = [existing, coordinator].reject(&:empty?).join(" ")
+      # Wire the coordinator's submit handler. Without this data-action the
+      # controller connects but onSubmit never fires, so an invalid form is not
+      # blocked client-side (issue #11). Joined with any caller-supplied action.
+      existing_action = attrs[:data][:action].to_s
+      submit_action = "submit->forms--validations--form#onSubmit"
+      attrs[:data][:action] = [existing_action, submit_action].reject(&:empty?).join(" ")
       attrs[:novalidate] = true
     end
 
