@@ -2,7 +2,7 @@
 description: "Executes full autonomous engineering workflow with verification. Use when implementing complete features, tackling GitHub issues, or running end-to-end development cycles."
 model: opus
 argument-hint: "GitHub issue number/URL or feature description"
-allowed-tools: Bash(gh issue view:*), Bash(gh search:*), Bash(gh issue list:*), Bash(gh pr create:*), Bash(gh pr view:*), Bash(bundle exec:*), Bash(bun:*), Bash(git:*), Read, Write, Edit, Glob, Grep, Agent
+allowed-tools: Bash(gh issue view:*), Bash(gh search:*), Bash(gh issue list:*), Bash(gh issue close:*), Bash(gh pr create:*), Bash(gh pr view:*), Bash(bundle exec:*), Bash(bun:*), Bash(git:*), Read, Write, Edit, Glob, Grep, Agent
 ---
 
 # LFG - Full Autonomous Workflow
@@ -239,10 +239,22 @@ Write the PR body to a temp file (`--body-file`) to avoid shell-interpolation of
 backticks/tables. The body is copied verbatim — if you would not type a
 backslash in a GitHub comment, do not type one in the heredoc.
 
-The PR body MUST end with a `## Deviations & judgment calls` section copied from
-`implementation-notes.md` (then delete the file). If the plan held completely,
-write "None — the plan held." This section is read FIRST in review — it is the
-audit trail for every decision the plan didn't make.
+**The PR body MUST contain a GitHub closing keyword for every issue it
+resolves** — `Closes #12`, `Fixes #13`, `Resolves #9` (one per issue; only these
+keywords auto-close, and `Refs #12` does NOT). Put them in the Summary so the
+issues close automatically when the PR merges to the default branch. This works
+with squash-merge; a keyword only in a commit body can be lost when commits are
+squashed, so the PR body is the reliable place. For a multi-issue PR, list every
+one: `Closes #9, closes #10, closes #11` (repeat the keyword — `Closes #9, #10`
+only closes #9).
+
+The PR body MUST also end with a `## Deviations & judgment calls` section copied
+from `implementation-notes.md` (then delete the file). If the plan held
+completely, write "None — the plan held." This section is read FIRST in review —
+it is the audit trail for every decision the plan didn't make.
+
+If a PR ever merges without the keyword (issues stay open), close them manually
+with `gh issue close <n> --reason completed --comment "Fixed in #<pr> (merged)."`.
 
 ---
 
@@ -265,6 +277,7 @@ The tests prove the CODE is right; this phase keeps the USER's mental model righ
 - [ ] New leaf mapped in BOTH `Theme.daisy` and `Theme.plain`; live/reactive features guard the soft phlex-reactive dependency
 - [ ] Required setup documented in the README (and wired into the `PhlexForms::Engine` initializer if it's a live/reactive concern)
 - [ ] PR created with summary + test plan
+- [ ] PR body has a closing keyword (`Closes #N` / `Fixes #N`) for EVERY resolved issue — one per issue, not `Refs`
 - [ ] PR body ends with `## Deviations & judgment calls` (from implementation-notes.md, since deleted)
 - [ ] Comprehension close-out delivered (decisions + three merge-gate questions)
 
