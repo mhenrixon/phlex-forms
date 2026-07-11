@@ -175,6 +175,13 @@ module PhlexForms
       render field_object(name).hidden(**)
     end
 
+    # Rails FormBuilder-compatible hidden field, for straight migration of
+    # `form.hidden_field(:token, value: x)` call sites. Same model-bound path as
+    # `Hidden`; an explicit `value:` wins over the model's current value.
+    def hidden_field(name, **)
+      render field_object(name).hidden(**)
+    end
+
     def Label(name, text = nil, *modifiers, **, &)
       render field_object(name).label(text, *modifiers, **, &)
     end
