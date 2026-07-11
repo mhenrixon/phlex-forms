@@ -102,6 +102,29 @@ module Forms
       )
     end
 
+    # A model-bound checkbox group over a collection. Shares one array-valued
+    # field name (`scope[name][]`) and derives the checked set from the model's
+    # current value, matched by each item's resolved value: (issue #9).
+    #
+    #   field.checkbox_group(Tag.all, value: :id, label: ->(t) { t.name })
+    #
+    # value:/label: are a method name (Symbol) or a proc taking the item.
+    def checkbox_group(collection, value: :id, label: :to_s, **)
+      # The model's current value is already the raw values (e.g. record.tag_ids
+      # => [1, 3]), so compare against them directly — don't re-resolve value:.
+      selected = Array(field_value)
+      opts = Array(collection).map do |item|
+        item_value = resolve_item(item, value)
+        {
+          value: item_value,
+          label: resolve_item(item, label),
+          checked: selected.include?(item_value),
+          id: "#{field_id}_#{item_value}"
+        }
+      end
+      theme[:checkbox_group].new(name: "#{field_name}[]", id: field_id, options: opts, error: invalid?, **)
+    end
+
     def label(text = nil, *modifiers, **, &block)
       theme[:label].new(*modifiers, text: text || (block ? nil : field_label), for: field_id, **, &block)
     end
@@ -227,6 +250,11 @@ module Forms
 
     def conditional?(validator)
       validator.options.key?(:if) || validator.options.key?(:unless) || validator.options.key?(:on)
+    end
+
+    # value:/label: for checkbox_group: a Proc taking the item, or a method name.
+    def resolve_item(item, accessor)
+      accessor.respond_to?(:call) ? accessor.call(item) : item.public_send(accessor)
     end
 
     def field_attributes

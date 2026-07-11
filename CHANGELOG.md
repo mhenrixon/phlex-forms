@@ -9,6 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`checkbox_group` — batched checkbox group for array-valued fields** (the
+  tag/facet-picker shape): `f.checkbox_group(:tag_ids, Tag.all, value: :id,
+  label: :name, variant: :pill, size: :sm)`, or via field inference
+  (`f.field :tag_ids, as: :checkbox_group, collection: Tag.all, value: :id`).
+  Shares one array-valued field name with a leading empty-array hidden field,
+  derives the checked set from the model's current value, and renders under both
+  themes. `variant:` (`:stack`/`:inline`/`:pill`) is layout-only, no JS.
+
+### Fixed
+
+- **`Form(validate: true)` never fired client-side validation on submit**: the
+  coordinator controller was attached but no `data-action` wired its `onSubmit`
+  handler, so submitting an invalid form was not blocked. `apply_validation_coordinator`
+  now emits `submit->forms--validations--form#onSubmit` (joined with any
+  caller-supplied `data-action`).
+- **`fields_for` iterated a Hash-backed association (JSONB), emitting bogus
+  indices**: a Hash responds to `#each_with_index`, so a JSONB column rendered
+  with `nested_attributes: false` produced `scope[assoc][0][field]`, `[1]`, …
+  instead of a single `scope[assoc][field]`. It is now treated as a single
+  nested scope; only genuine collections (Enumerable, not Hash) iterate.
+
 - **`Forms::Base` declarative form classes**: subclass, declare fields in
   `#fields` where `self` IS the form (bare `field :email`, no `f.` prefix),
   render with `render UserForm.new(model: @user)`. Class-level `form_options`
