@@ -33,11 +33,30 @@ if defined?(Phlex::Reactive)
       end
     end
 
-    describe "the wire contract (raw data attributes, not the sugar helpers)" do
+    describe "the wire contract (the 0.12.2 escape-hatch sugar)" do
       it "targets the hidden field by [name=...] on the root" do
-        # instance-dynamic wire name: the raw attr is the contract, the symbol
-        # sugar can't express user[tags] (issue #6 Caveat 1)
+        # instance-dynamic wire name via reactive_tags(name: @name) — the 0.12.2
+        # escape hatch that the symbol sugar can't express (issue #6 Caveat 1);
+        # validated at render (see the malformed-name example below).
         expect(output).to include(%(data-reactive-tags-field="[name=&quot;user[tags]&quot;]"))
+      end
+
+      it "emits both filter selectors so the client type-ahead actually runs" do
+        # reactive_filter(input:) emits reactive-filter-input AND
+        # reactive-filter-option; the 0.12.x client #syncFilter early-returns
+        # unless BOTH are present, so the raw -input-only workaround left
+        # filtering dead. This is the regression guard (issue #6 Caveats 1 & 2).
+        expect(output).to include(%(data-reactive-filter-input="#user_tags_query"))
+        expect(output).to include(%(data-reactive-filter-option="[role=option]"))
+      end
+
+      it "validates the wire name at render (reactive_tags name: escape hatch)" do
+        # A wire name with a double quote would break the [name="…"] CSS selector
+        # the client queries with; verbatim_name_selector! fails loudly at render
+        # instead of silently mis-binding in the browser.
+        expect do
+          render_component(described_class.new(name: 'user[tags"]', id: "t", value: []))
+        end.to raise_error(ArgumentError, /double quote/)
       end
 
       it "marks the reactive root, tags list, and chip template" do

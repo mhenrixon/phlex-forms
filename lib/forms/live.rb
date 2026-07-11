@@ -168,10 +168,16 @@ module Forms
       # widget (rendered in the block) is driven by this root, which then DOM-owns
       # its hidden field. Name/id derived through field_name/field_id — the same
       # path the rootless render uses, so the [name=…]/#…_query selectors match.
+      # This form IS a reactive component, so it has reactive_tags/reactive_filter
+      # itself — the same 0.12.2 escape-hatch sugar Forms::TagField uses, emitting
+      # both filter selectors the client needs (issue #6 Caveats 1 & 2).
       tag = self.class.live_tags_declaration
       return attrs unless tag
 
-      mix(attrs, Forms::TagField.root_tag_attributes(name: field_name(tag[:name]), id: field_id(tag[:name])))
+      query_id = Forms::TagField.query_id(field_id(tag[:name]))
+      mix(attrs,
+        reactive_tags(name: field_name(tag[:name])),
+        reactive_filter(input: "##{query_id}"))
     end
 
     # Untouched fields get no error set, so nothing flashes before the user

@@ -15,8 +15,9 @@ gem "phlex-forms", path: ".."
 
 # Soft deps of phlex-forms, loaded here so the live docs examples render with
 # full styling (daisyui, already above) and the client-only tag/live behavior
-# (phlex-reactive >= 0.11.4 ships the reactive_tags handlers the tag_field uses).
-gem "phlex-reactive", ">= 0.11.4"
+# (phlex-reactive >= 0.12.2 ships the reactive_tags(name:)/reactive_filter(input:)
+# escape hatches the tag_field's instance-dynamic wire name uses — issue #6).
+gem "phlex-reactive", ">= 0.12.2"
 
 # Expose these docs to AI agents over MCP (a read-only /mcp endpoint, drawn in
 # config/routes.rb), with rack-attack throttling the public AI/tooling
