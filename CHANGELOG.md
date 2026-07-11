@@ -23,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the Control's own visible `label:` / `hint:` get stable ids and the field wires
   `aria-labelledby` / `aria-describedby` at them (no duplicate markup). Absent a
   name, output is unchanged.
+- **`checkbox_group` `item_label:`** — the per-item text accessor, so a
+  `f.field(:tags, as: :checkbox_group, label: "Tags", item_label: ->(t){…})`
+  renders a visible group heading (`label:`, via the Control) AND custom item
+  labels at once — previously `label:` on the `f.field` path was eaten by the
+  heading and items fell back to `to_s`. `item_label:` wins over `label:` for the
+  item text; on the bare verb `label:` stays the item accessor and `item_label:`
+  is an alias. Absent it, behavior is unchanged.
 
 ### Changed
 

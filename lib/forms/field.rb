@@ -112,8 +112,20 @@ module Forms
     #
     #   field.checkbox_group(Tag.all, value: :id, label: ->(t) { t.name })
     #
-    # value:/label: are a method name (Symbol) or a proc taking the item.
-    def checkbox_group(collection, value: :id, label: :to_s, **)
+    # value: is a method name (Symbol) or a proc taking the item -> its submitted
+    # value. The per-item visible text comes from item_label: (Symbol/Proc/String)
+    # if given, else label:; when NEITHER is given each item is labelled by the
+    # first of name/title/label/to_s it responds to (the same LABEL_METHODS chain
+    # Inference uses for association choices) — so a plain
+    # `f.field(:tags, as: :checkbox_group, label: "Tags")` shows readable item
+    # text without an explicit accessor.
+    #
+    # item_label: exists so the `f.field` path can pass a visible group heading as
+    # `label:` (consumed by the Control) AND still customize the per-item text
+    # here — the two no longer collide. item_label: is consumed here; it never
+    # leaks to the group div.
+    def checkbox_group(collection, value: :id, label: nil, item_label: nil, **)
+      text = item_label || label
       # The model's current value is already the raw values (e.g. record.tag_ids
       # => [1, 3]), so compare against them directly — don't re-resolve value:.
       selected = Array(field_value)
@@ -121,7 +133,7 @@ module Forms
         item_value = resolve_item(item, value)
         {
           value: item_value,
-          label: resolve_item(item, label),
+          label: text ? resolve_item(item, text) : infer_item_label(item),
           checked: selected.include?(item_value),
           id: "#{field_id}_#{item_value}"
         }
@@ -256,9 +268,25 @@ module Forms
       validator.options.key?(:if) || validator.options.key?(:unless) || validator.options.key?(:on)
     end
 
-    # value:/label: for checkbox_group: a Proc taking the item, or a method name.
+    # value:/label:/item_label: for checkbox_group. A Proc is called with the
+    # item; a String is literal text (the same for every item — no method
+    # dispatch, so a stray string can't NoMethodError); anything else (a Symbol)
+    # is sent to the item as a method name.
     def resolve_item(item, accessor)
-      accessor.respond_to?(:call) ? accessor.call(item) : item.public_send(accessor)
+      case accessor
+      when Proc   then accessor.call(item)
+      when String then accessor
+      else item.public_send(accessor)
+      end
+    end
+
+    # Default per-item label when no label:/item_label: was given: the first of
+    # name/title/label/to_s the item responds to (mirrors PhlexForms::Inference's
+    # LABEL_METHODS for association choices, so option text is picked the same way
+    # across the gem).
+    def infer_item_label(item)
+      method = PhlexForms::Inference::LABEL_METHODS.find { |m| item.respond_to?(m) }
+      item.public_send(method || :to_s)
     end
 
     def field_attributes
