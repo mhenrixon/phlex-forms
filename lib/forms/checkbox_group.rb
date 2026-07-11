@@ -8,10 +8,13 @@ module Forms
   # resolved value: of its item against the model's current set.
   #
   #   f.checkbox_group(:tag_ids, Tag.all, value: :id,
-  #     label: ->(t) { t.name.presence || t.slug }, variant: :pill, size: :sm)
+  #     item_label: ->(t) { t.name.presence || t.slug }, variant: :pill, size: :sm)
   #
-  # value:   method or proc -> the submitted value of each item (default :id)
-  # label:   method or proc -> the visible text of each item (default :to_s)
+  # The item value/text accessors (value:/label:/item_label:) live on the BUILDER
+  # (Forms::Field#checkbox_group), which pre-resolves each item to
+  # { value:, label:, checked:, id: } before this leaf renders. This leaf is
+  # presentation-only — it receives the resolved options: array, never the raw
+  # accessors.
   # variant: :stack (default) | :inline | :pill — layout only, zero JS
   # size:    daisyUI checkbox size modifier (:xs :sm :md :lg :xl)
   #

@@ -368,9 +368,13 @@ f.checkbox_group(:tag_ids, Tag.all, value: :id,
   variant: :pill,                             # :stack (default) | :inline | :pill
   size: :sm,                                  # daisyUI checkbox size
   aria: { label: "Tags" })                    # names the group for screen readers
-# ...or through field inference (the field's label/hint name the group):
+# ...or through field inference. Here `label:`/`hint:` are the field's VISIBLE
+# heading + description (rendered by the Control, which also names the group);
+# `item_label:` gives the per-item text, so you get a heading AND custom item
+# labels at once:
 f.field :tag_ids, as: :checkbox_group, collection: Tag.all, value: :id,
-  label: "Tags", hint: "Pick any"
+  label: "Tags", hint: "Pick any",
+  item_label: ->(t) { t.name.presence || t.slug }, variant: :pill
 
 f.collection_select(:country_id, Country.all, :id, :name, prompt: "Select…")
 ```
@@ -380,6 +384,13 @@ empty-array hidden field, so deselecting everything still submits. The checked
 set comes from the model's current value matched by each item's resolved
 `value:` — re-rendering an edit form pre-checks the right boxes. The `:pill`
 variant styles the active chip with Tailwind's `has-[:checked]:` (no JS).
+
+**Two labels, no collision.** Through `f.field`, `label:` is the field's visible
+group heading (the Control renders it); the per-item text comes from `item_label:`
+(a Symbol method or Proc). On the bare `f.checkbox_group` verb there is no Control
+heading, so `label:` *is* the per-item accessor (and `item_label:` is accepted as
+an alias). Either way `value:` is the submitted value; `item_label:` wins over
+`label:` for the item text when both are present.
 
 A `role="group"` needs an **accessible name** for assistive tech. The verb has
 no bespoke naming option — HTML/ARIA attributes pass straight through to the

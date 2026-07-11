@@ -225,4 +225,89 @@ describe "checkbox_group (issue #9)" do
       end
     end
   end
+
+  # Feedback follow-up: the f.field path took `label:` as the visible Control
+  # heading, so the per-item label proc had nowhere to go (items fell back to
+  # to_s). `item_label:` supplies the per-item text alongside a visible heading —
+  # the marketplace tag-picker shape (heading + custom item labels) in one call.
+  describe "item_label: (visible heading + custom item labels at once)" do
+    it "renders the Control heading AND custom item labels via f.field" do
+      output = render_form(user) do |f|
+        f.field(:tag_ids, as: :checkbox_group, collection:, value: :id,
+          label: "Tags", hint: "Pick any",
+          item_label: ->(t) { t.name || t.slug })
+      end
+
+      # The visible Control heading (label:) is present and names the group.
+      expect(output).to include(">Tags</span>")
+      expect(output).to match(/role="group"[^>]*aria-labelledby="user_tag_ids_label"/)
+      # Item labels come from the proc — the third item's name is nil -> its slug.
+      expect(output).to include(">Ruby<")
+      expect(output).to include(">hotwire<") # name nil -> slug fallback
+      # NOT the struct's to_s (the pre-fix behavior).
+      expect(output).not_to include("#<struct")
+    end
+
+    it "accepts item_label: as a Symbol method too" do
+      output = render_form(user) do |f|
+        f.field(:tag_ids, as: :checkbox_group, collection:, value: :id,
+          label: "Tags", item_label: :slug)
+      end
+
+      expect(output).to include(">ruby<")
+      expect(output).to include(">rails<")
+    end
+
+    it "on the bare verb, item_label: is an alias for the item accessor" do
+      output = render_form(user) do |f|
+        f.checkbox_group(:tag_ids, collection, value: :id,
+          item_label: :slug, aria: { label: "Tags" })
+      end
+
+      expect(output).to include(">ruby<")
+      expect(output).to include(">hotwire<")
+    end
+
+    it "item_label: wins over label: when both reach the group" do
+      # label: :name would give nil for the third item; item_label: forces slug.
+      output = render_form(user) do |f|
+        f.checkbox_group(:tag_ids, collection, value: :id, label: :name, item_label: :slug)
+      end
+
+      expect(output).to include(">hotwire<") # slug, not the nil name
+    end
+
+    it "keeps an explicit label: accessor when item_label: is absent" do
+      # Backward compatible with the bare-verb usage.
+      output = render_form(user) do |f|
+        f.checkbox_group(:tag_ids, collection, value: :id, label: :name)
+      end
+
+      expect(output).to include(">Ruby<")
+      expect(output).to include(">Rails<")
+    end
+
+    it "infers item text (name/title/label/to_s) when neither label: nor item_label: given" do
+      # The heading-only f.field case: label: is the Control heading, so nothing
+      # reaches the group as an item accessor — it should still read the item's
+      # name, not dump #<struct ...>.
+      output = render_form(user) do |f|
+        f.field(:tag_ids, as: :checkbox_group, collection:, value: :id, label: "Tags")
+      end
+
+      expect(output).to include(">Ruby<") # item.name, inferred
+      expect(output).to include(">Rails<")
+      expect(output).not_to include("#<struct")
+    end
+
+    it "treats a String item_label: as literal text (no method dispatch)" do
+      # A plain object with no matching reader must not NoMethodError.
+      plain = [Object.new, Object.new]
+      output = render_form(build_model(:user, tag_ids: [])) do |f|
+        f.checkbox_group(:tag_ids, plain, value: :object_id, item_label: "Pick me")
+      end
+
+      expect(output.scan(">Pick me<").size).to eq(2)
+    end
+  end
 end
