@@ -165,6 +165,9 @@ module PhlexForms
       when :textarea      then render fo.textarea(*modifiers, required:, **)
       when :toggle        then render fo.toggle(*modifiers, required:, **)
       when :checkbox      then render fo.checkbox(*modifiers, required:, **)
+      # required: doesn't apply to a group of checkboxes sharing one array name;
+      # validate the selection server-side instead.
+      when :checkbox_group then render_checkbox_group(fo, **)
       when :file          then render fo.file(*modifiers, required:, **)
       when :hidden        then render fo.hidden(**)
       when :rich_textarea then render fo.rich_textarea(*modifiers, **)
@@ -175,6 +178,14 @@ module PhlexForms
         type = kind == :datetime ? :"datetime-local" : kind
         render fo.input(*(modifiers - INPUT_TYPE_MODIFIERS), type:, required:, **)
       end
+    end
+
+    # `f.field :tag_ids, as: :checkbox_group, collection: Tag.all, value:, label:`.
+    # collection: names the enumerable; the rest (value:/label:/variant:/size:)
+    # passes through to Field#checkbox_group. (choices:/required: are consumed by
+    # render_field_input's own signature, so they never reach here.)
+    def render_checkbox_group(fo, collection: [], **)
+      render fo.checkbox_group(collection, **)
     end
 
     def materialize_choices(choices)

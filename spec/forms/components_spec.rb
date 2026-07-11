@@ -78,6 +78,19 @@ describe "Forms components" do
       expect(output).to include("forms--validations--form")
     end
 
+    it "wires the submit handler via a data-action (issue #11)" do
+      # Without this, the coordinator connects but onSubmit is never invoked, so
+      # submitting an invalid form is not blocked client-side.
+      output = render_form(partner, validate: true, &:submit)
+      expect(output).to include("submit->forms--validations--form#onSubmit")
+    end
+
+    it "preserves a caller-supplied data-action alongside the coordinator action" do
+      output = render_form(partner, validate: true, data: { action: "click->thing#go" }, &:submit)
+      expect(output).to include("click->thing#go")
+      expect(output).to include("submit->forms--validations--form#onSubmit")
+    end
+
     it "wires per-field validator controllers from the model" do
       output = render_form(partner, validate: true) { |f| f.field(:title) }
       expect(output).to include("forms--validations--presence forms--validations--length")

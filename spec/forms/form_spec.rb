@@ -239,6 +239,24 @@ describe Forms::Form do
       expect(output).not_to include("settings_attributes")
     end
 
+    it "treats a Hash-backed association as a single nested scope, not a collection" do
+      # A JSONB column returns a populated Hash. A Hash responds to
+      # #each_with_index, so the old branch iterated it as [key, value] pairs,
+      # emitting name="record[profile][0][phone]", [1], ... (issue #10).
+      profile = { "phone" => "555", "city" => "NYC" }
+      record = build_model(:record, profile:)
+
+      output = render_form(record) do |f|
+        f.fields_for(:profile, profile, nested_attributes: false) do |pf|
+          pf.field(:phone)
+        end
+      end
+
+      expect(output).to include('name="record[profile][phone]"')
+      expect(output).not_to include("record[profile][0]")
+      expect(output).not_to include("record[profile][1]")
+    end
+
     it "exposes field_value alongside field_name and field_id" do
       captured = nil
       render_form(user) do |f|

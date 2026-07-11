@@ -351,12 +351,28 @@ f.fields_for(:settings, nested_attributes: false) do |s|
 end
 
 f.collection_check_boxes(:role_ids, Role.all, :id, :name) do |b|
-  render b.check_box
+  render b.check_box                          # per-item control, full custom layout
   render b.label
 end
 
+# The batched "tag/facet picker" shape: one array-valued field name, checked
+# state derived from the model (record.tag_ids), sensible defaults, no block.
+f.checkbox_group(:tag_ids, Tag.all, value: :id, label: :name)
+f.checkbox_group(:tag_ids, Tag.all, value: :id,
+  label: ->(t) { t.name.presence || t.slug }, # Symbol method or Proc
+  variant: :pill,                             # :stack (default) | :inline | :pill
+  size: :sm)                                  # daisyUI checkbox size
+# ...or through field inference:
+f.field :tag_ids, as: :checkbox_group, collection: Tag.all, value: :id, label: :name
+
 f.collection_select(:country_id, Country.all, :id, :name, prompt: "Select…")
 ```
+
+`checkbox_group` submits an array param (`user[tag_ids][]`) with a leading
+empty-array hidden field, so deselecting everything still submits. The checked
+set comes from the model's current value matched by each item's resolved
+`value:` — re-rendering an edit form pre-checks the right boxes. The `:pill`
+variant styles the active chip with Tailwind's `has-[:checked]:` (no JS).
 
 `Form(model: @item, scope: false)` emits **bare** field names
 (`name="quantity"`) — the shape phlex-reactive row editors and
