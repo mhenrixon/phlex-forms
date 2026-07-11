@@ -67,11 +67,15 @@ module Forms
     end
 
     def radio(value, *modifiers, **options)
+      # field_attributes carries value: field_value (the model's CURRENT value).
+      # Drop it here so it can't clobber this radio's own positional value —
+      # otherwise every radio in the group renders the model's value (issue #13).
+      attrs = field_attributes.except(:value).merge(options)
       theme[:radio].new(
         *modifiers,
         value:,
         checked: field_value == value,
-        **field_attributes.merge(options).merge(id: "#{field_id}_#{value}")
+        **attrs.merge(id: "#{field_id}_#{value}")
       )
     end
     alias radio_button radio
