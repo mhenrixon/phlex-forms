@@ -18,11 +18,13 @@ module Forms
   # The reactive_tags_* client helpers require phlex-reactive >= 0.11.4.
   #
   # It uses the reactive_tags_add/option/remove helpers for the chip/query/option
-  # behavior, but emits the ROOT's `data-reactive-tags-field` raw rather than via
-  # reactive_tags(:tags): that helper compiles a SYMBOL through the class-level
-  # reactive_scope, but a form builder's wire name is per-instance ("user[tags]").
-  # The data attribute IS the public contract; any CSS selector works (issue #6
-  # Caveats 1 & 2). Likewise the query input targets by #id so it never submits.
+  # behavior, and the ROOT's wire attrs come from the 0.12.2 escape-hatch sugar:
+  # reactive_tags(name: @name) takes the per-instance wire name verbatim ("user[tags]")
+  # — the class-level reactive_scope compile can't express it — validated at render;
+  # reactive_filter(input: "#…_query") targets the query input by id so it never
+  # submits, and (unlike the old raw -input-only attr) also emits
+  # data-reactive-filter-option so the 0.12.x client type-ahead actually runs
+  # (issue #6 Caveats 1 & 2).
   class TagField < Phlex::HTML
     include Phlex::Reactive::ClientBindings
 
@@ -48,21 +50,26 @@ module Forms
       end
     end
 
-    # The root's tag wire attrs. Raw, not reactive_tags(:tags)/reactive_filter(:q)
-    # (Caveats 1 & 2): target the hidden field by [name=…] and the query input by
-    # #id (an id selector means the query input never submits a stray param).
-    # Public so Forms::Live can hoist these onto the <form> root when the widget
-    # is lifted rootless.
-    def self.root_tag_attributes(name:, id:)
-      { data: {
-        reactive_tags_field: %([name="#{name}"]),
-        reactive_filter_input: "##{id}_query"
-      } }
-    end
+    # The query input's id — the reactive_filter(input:) target and the id the
+    # search input itself carries. Public so Forms::Live can derive the same id
+    # when it hoists the tag wire attrs onto the <form> root (rootless widget).
+    def self.query_id(id) = "#{id}_query"
 
     private
 
-    def root_tag_attributes = self.class.root_tag_attributes(name: @name, id: @id)
+    # The root's tag wire attrs, via the 0.12.2 escape-hatch sugar (Caveats 1 & 2):
+    # reactive_tags(name:) takes the instance-dynamic wire name verbatim and
+    # validates it at render; reactive_filter(input:) targets the query input by
+    # #id (so it never submits a stray param) and emits both filter selectors the
+    # 0.12.x client needs to run the type-ahead. Both are private helpers from
+    # ClientBindings — Forms::Live has its own copies (it's a reactive component)
+    # and calls them directly when hoisting these onto the <form> root.
+    def root_tag_attributes
+      mix(
+        reactive_tags(name: @name),
+        reactive_filter(input: "##{self.class.query_id(@id)}")
+      )
+    end
 
     # The widget body WITHOUT its root wrapper — shared with the rootless variant
     # so chip/template/suggestion markup never drifts between the two.
@@ -93,7 +100,7 @@ module Forms
 
     def query_attributes
       {
-        id: "#{@id}_query", type: "search", autocomplete: "off",
+        id: self.class.query_id(@id), type: "search", autocomplete: "off",
         placeholder: @placeholder, class: input_classes,
         "aria-invalid": @error || nil
       }.compact

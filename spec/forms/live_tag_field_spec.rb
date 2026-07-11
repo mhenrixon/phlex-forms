@@ -52,6 +52,10 @@ if defined?(Phlex::Reactive)
         expect(form_tag).to include("data-reactive-tags-field=")
         expect(form_tag).to include("tagged_post[tags]")
         expect(form_tag).to include("data-reactive-filter-input=")
+        # Both filter selectors hoist (reactive_filter(input:), not the raw
+        # -input-only attr) so the 0.12.x client type-ahead runs on the live
+        # form root too (issue #6 Caveats 1 & 2).
+        expect(form_tag).to include(%(data-reactive-filter-option="[role=option]"))
       end
 
       it "renders the tag widget ROOTLESS (no nested reactive root) so the form owns the hidden field" do
