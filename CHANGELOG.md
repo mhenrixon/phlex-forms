@@ -45,6 +45,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A caller width class stacked with the `w-full` default instead of replacing
+  it**: `DelegatedField#width_class` joined `"w-full"` and the caller's
+  `class:` verbatim, so `Forms::Select(class: "w-36")` emitted
+  `class="... w-full w-36"` and stylesheet source order — not author intent —
+  picked the winner (in practice `w-full`, which blew filter selects up to full
+  width; zazu#2934). `ClassMerge` gained a width family (anchored `w-*`, so
+  `min-w-*`/`max-w-*` still compose) and `width_class` merges through it —
+  last width wins, matching the daisyui size/color family semantics.
+
 - **`f.Radio` / `Field#radio` rendered the model's current value on every radio
   instead of each radio's own value**: `field_attributes` carried `value:
   field_value` and was splatted after the explicit positional value, clobbering

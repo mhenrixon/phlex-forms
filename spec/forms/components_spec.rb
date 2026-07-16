@@ -27,6 +27,38 @@ describe "Forms components" do
     end
   end
 
+  describe "width default vs caller width" do
+    # A caller width must REPLACE the w-full default, not stack with it — with
+    # both on the element, stylesheet source order (not author intent) decides,
+    # and w-full winning is how admin filter selects went full-width (zazu#2934).
+    it "replaces the w-full default with a caller width on Select" do
+      output = render_component(Forms::Select.new(:sm, name: "status", choices: [%w[Active active]], class: "w-36"))
+      expect(output).to match(/class="[^"]*w-36[^"]*"/)
+      expect(output).not_to include("w-full")
+    end
+
+    it "replaces the w-full default with a caller width on Input" do
+      output = render_component(Forms::Input.new(:sm, type: "date", name: "start_date", class: "w-28"))
+      expect(output).to match(/class="[^"]*w-28[^"]*"/)
+      expect(output).not_to include("w-full")
+    end
+
+    it "keeps the w-full default when the caller passes no width" do
+      output = render_component(Forms::Input.new(name: "email"))
+      expect(output).to match(/class="[^"]*w-full[^"]*"/)
+    end
+
+    it "composes w-full with min-w-/max-w- caller classes (different properties)" do
+      output = render_component(Forms::Select.new(name: "event_type", choices: [], class: "min-w-32"))
+      expect(output).to match(/class="[^"]*w-full[^"]*min-w-32[^"]*"/)
+    end
+
+    it "emits no width at all with full_width: false" do
+      output = render_component(Forms::Input.new(name: "email", full_width: false))
+      expect(output).not_to include("w-full")
+    end
+  end
+
   describe "Radio (issue #13)" do
     it "keeps each radio's own value instead of the model's current value" do
       # field_attributes carries value: field_value; splatted after the explicit

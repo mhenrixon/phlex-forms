@@ -9,14 +9,21 @@ module PhlexForms
   # the same family, the LAST occurrence wins — matching Tailwind/daisyui
   # intuition (the later class overrides the earlier).
   #
-  # We deliberately do NOT depend on tailwind_merge: on form fields, callers pass
-  # daisyui modifiers (which this handles) rather than conflicting core Tailwind
-  # utilities, so tailwind_merge would add a runtime dependency for a conflict
-  # that does not occur here. Non-conflicting utilities (`w-full`, `py-0`, ...)
-  # simply pass through in order.
+  # Width utilities (`w-*`) are the one core-Tailwind family this gem injects a
+  # default for (DelegatedField's `w-full`), so they conflict the same way: a
+  # caller's `w-36` must REPLACE the default, or both land on the element and
+  # stylesheet source order — not author intent — decides which applies.
+  #
+  # We deliberately do NOT depend on tailwind_merge: daisyui modifier families
+  # and the width family are the only conflicts that occur on form fields, so
+  # tailwind_merge would add a runtime dependency for conflicts this handles.
+  # Other non-conflicting utilities (`py-0`, `min-w-32`, ...) pass through in
+  # order.
   module ClassMerge
     SIZE = /-(xs|sm|md|lg|xl)\z/
     COLOR = /-(primary|secondary|accent|neutral|info|success|warning|error)\z/
+    # Anchored so min-w-*/max-w-* (different CSS properties) stay out of the family.
+    WIDTH = /\Aw-/
 
     module_function
 
@@ -43,9 +50,12 @@ module PhlexForms
       end
     end
 
-    # A stable bucket key like "input:size" / "select:color", or nil if the token
-    # is not a recognized daisyui size/color modifier.
+    # A stable bucket key like "width" / "input:size" / "select:color", or nil if
+    # the token is not a recognized conflicting family. WIDTH is checked first so
+    # a `w-*` token can never be mis-bucketed as a daisyui modifier.
     def family_key(token)
+      return "width" if WIDTH.match?(token)
+
       if (m = token.match(SIZE))
         "#{token[0...m.begin(0)]}:size"
       elsif (m = token.match(COLOR))
