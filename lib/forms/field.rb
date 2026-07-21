@@ -30,6 +30,12 @@ module Forms
     # PhlexForms::Theme), so the same field renders daisy or plain.
 
     def input(*modifiers, type: :text, **)
+      # type: :hidden reroutes to #hidden so EVERY path to a hidden field lands on
+      # the bare leaf — `f.Input(:token, :hidden)` and `f.Input(:token, type:
+      # :hidden)` would otherwise still emit the styled `input w-full`. Positional
+      # modifiers are dropped with it: a hidden field has no visual variants.
+      return hidden(**) if type.to_s == "hidden"
+
       theme[:input].new(*modifiers, type:, **field_attributes, **)
     end
 
@@ -43,8 +49,13 @@ module Forms
     end
     alias rich_text_area rich_textarea
 
+    # Bare <input type="hidden">, never the styled :input leaf — daisyui's
+    # `.input` beats WebKit's non-!important `input[type=hidden] { display: none }`
+    # and turns the field into a focusable phantom tab stop in Safari. Built from
+    # the explicit accessors (not field_attributes) so the meaningless
+    # `error: invalid?` is never introduced.
     def hidden(**)
-      theme[:input].new(type: :hidden, **field_attributes, **)
+      theme[:hidden].new(name: field_name, id: field_id, value: field_value, **)
     end
 
     # daisyui v5 "icon/text inside the field" wrapper. The block renders the

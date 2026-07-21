@@ -88,6 +88,11 @@ describe "theming" do
     expect(PhlexForms::Theme.plain[:tag_field]).to eq(Forms::Plain::TagField)
   end
 
+  it "maps the :hidden role to the same bare component in both themes" do
+    expect(PhlexForms::Theme.daisy[:hidden]).to eq(Forms::Hidden)
+    expect(PhlexForms::Theme.plain[:hidden]).to eq(Forms::Hidden)
+  end
+
   it "supports single-role overrides via Theme#with" do
     custom_input = Class.new(Forms::Plain::Input) do
       def view_template
