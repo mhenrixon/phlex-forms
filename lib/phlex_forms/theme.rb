@@ -4,7 +4,9 @@ module PhlexForms
   # A theme maps component roles (:input, :select, :control, ...) to component
   # classes. The binding contract — the leaf initializer signatures
   # (*modifiers, name:, id:, value:, error:, required:, ...) — is the stable
-  # interface, so the same form class renders under any theme.
+  # interface, so the same form class renders under any theme. The one exception
+  # is :hidden, which takes name:/id:/value: only — a hidden field has neither a
+  # visual variant nor an error state.
   #
   # Built-ins:
   #   Theme.daisy — the DaisyUI-delegating Forms::* leaves (default when the
@@ -56,7 +58,7 @@ module PhlexForms
           textarea: Forms::Textarea, rich_textarea: Forms::RichTextarea,
           checkbox: Forms::Checkbox, toggle: Forms::Toggle, radio: Forms::Radio,
           checkbox_group: Forms::CheckboxGroup,
-          file: Forms::FileInput, wrapped_input: Forms::WrappedInput,
+          file: Forms::FileInput, wrapped_input: Forms::WrappedInput, hidden: Forms::Hidden,
           control: Forms::FormControl, label: Forms::Label,
           field_error: Forms::FieldError, field_hint: Forms::FieldHint,
           submit: Forms::Submit, row: Forms::Row, group: Forms::Group,
@@ -74,7 +76,7 @@ module PhlexForms
           textarea: Forms::Plain::Textarea, rich_textarea: Forms::Plain::Textarea,
           checkbox: Forms::Plain::Checkbox, toggle: Forms::Plain::Checkbox, radio: Forms::Plain::Radio,
           checkbox_group: Forms::Plain::CheckboxGroup,
-          file: Forms::Plain::FileInput, wrapped_input: Forms::Plain::WrappedInput,
+          file: Forms::Plain::FileInput, wrapped_input: Forms::Plain::WrappedInput, hidden: Forms::Hidden,
           control: Forms::Plain::Control, label: Forms::Plain::Label,
           field_error: Forms::Plain::FieldError, field_hint: Forms::Plain::FieldHint,
           submit: Forms::Plain::Submit, row: Forms::Plain::Row, group: Forms::Plain::Group,

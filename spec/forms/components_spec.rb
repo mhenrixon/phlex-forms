@@ -132,6 +132,87 @@ describe "Forms components" do
     end
   end
 
+  # A hidden field must never carry visual styling: daisyui's `.input`
+  # (display: inline-flex) overrides WebKit's NON-!important UA rule
+  # `input[type=hidden] { display: none }`, so a styled hidden field renders as
+  # an empty box and becomes a focusable phantom tab stop in Safari. Chromium's
+  # UA rule is !important, which is why the bug only shows there.
+  describe "Hidden (bare, unstyled)" do
+    let(:user) { build_model(:user, token: "abc123") }
+
+    it "renders a bare hidden input with the model-bound name, id, and value" do
+      output = render_form(user) { |f| f.Hidden(:token) }
+
+      expect(output).to include('<input type="hidden" name="user[token]" id="user_token" value="abc123">')
+    end
+
+    it "emits no styling classes (the WebKit focusability fix)" do
+      output = render_form(user) { |f| f.Hidden(:token) }
+
+      expect(output).not_to match(/<input[^>]*type="hidden"[^>]*class=/)
+      expect(output).not_to include("w-full")
+    end
+
+    it "carries no error state when the field is invalid" do
+      user.errors.add(:token, "is invalid")
+
+      output = render_form(user) { |f| f.Hidden(:token) }
+
+      expect(output).not_to match(/<input[^>]*type="hidden"[^>]*(error|aria-invalid)/)
+    end
+
+    it "lets a caller value: win over the model value" do
+      output = render_form(user) { |f| f.Hidden(:token, value: 42) }
+
+      expect(output).to include('value="42"')
+      expect(output).not_to include('value="abc123"')
+    end
+
+    it "passes caller attributes through verbatim" do
+      output = render_form(user) { |f| f.Hidden(:token, tabindex: -1, data: { controller: "autosubmit" }) }
+
+      expect(output).to include('tabindex="-1"')
+      expect(output).to include('data-controller="autosubmit"')
+    end
+
+    # Every route to a hidden field converges on the bare leaf — including the
+    # Input escape hatch, which resolves :hidden as an input type.
+    {
+      "f.Hidden" => ->(f) { f.Hidden(:token) },
+      "f.hidden_field" => ->(f) { f.hidden_field(:token) },
+      "f[:token].hidden" => ->(f) { f.render(f[:token].hidden) },
+      "f.Input positional :hidden" => ->(f) { f.Input(:token, :hidden) },
+      "f.Input type: :hidden" => ->(f) { f.Input(:token, type: :hidden) }
+    }.each do |label, call|
+      it "renders a bare hidden input via #{label}" do
+        output = render_form(user) { |f| call.call(f) }
+
+        expect(output).to include('<input type="hidden" name="user[token]" id="user_token" value="abc123">')
+        expect(output).not_to include("w-full")
+      end
+    end
+
+    # The `field` verb wraps its control in a Control (label + form-control div);
+    # what matters here is that the input itself is bare.
+    it "renders a bare hidden input via the field verb (as: and positional)" do
+      as_kwarg = render_form(user) { |f| f.field(:token, as: :hidden) }
+      positional = render_form(user) { |f| f.field(:token, :hidden) }
+
+      expect([as_kwarg, positional]).to all(
+        include('<input type="hidden" name="user[token]" id="user_token" value="abc123">')
+      )
+      expect([as_kwarg, positional]).to all(satisfy { |out| !out.include?('class="input') })
+    end
+
+    it "renders identically under the plain theme" do
+      daisy = render_form(user) { |f| f.Hidden(:token) }
+      plain = render_form(user, theme: :plain) { |f| f.Hidden(:token) }
+
+      expect(plain).to eq(daisy)
+      expect(plain).to include('<input type="hidden" name="user[token]" id="user_token" value="abc123">')
+    end
+  end
+
   describe "fields_for (has_many nested attributes)" do
     it "renders indexed nested attribute names" do
       child = Class.new do
